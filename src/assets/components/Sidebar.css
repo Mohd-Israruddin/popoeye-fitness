@@ -1,0 +1,94 @@
+.sidebar {
+  width: 220px;
+  height: 100vh;
+  background-color: #222;
+  color: #eee;
+  padding: 20px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between; /* to push social icons down */
+}
+
+.logo {
+  font-size: 1.8rem;
+  font-weight: bold;
+  letter-spacing: 2px;
+  text-align: center;
+  margin-bottom: 40px;
+  /* Reserve extra space for actual logo image if needed */
+  height: 60px; 
+  line-height: 60px;
+}
+
+.nav-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  flex-grow: 1;
+}
+
+.nav-item {
+  margin-bottom: 15px;
+}
+
+.nav-link {
+  color: #ccc;
+  text-decoration: none;
+  font-size: 1.1rem;
+  padding: 10px 15px;
+  display: block;
+  border-radius: 5px;
+  transition: background-color 0.3s;
+}
+
+.nav-link:hover {
+  background-color: #444;
+  color: #fff;
+}
+
+.nav-link.active {
+  background-color: #007bff;
+  color: #fff;
+  font-weight: bold;
+}
+
+/* Social media container at bottom */
+.social-container {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.social-icon {
+  color: #ccc;
+  font-size: 1.5rem;
+  transition: color 0.3s;
+  cursor: pointer;
+}
+
+.social-icon:hover {
+  color: #007bff;
+}
+.dropdown-toggle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  padding: 10px 15px;
+  font-size: 1rem;
+}
+
+.dropdown-menu {
+  padding-left: 20px;
+}
+
+.chevron-icon {
+  margin-left: auto;
+  font-size: 0.8rem;
+}

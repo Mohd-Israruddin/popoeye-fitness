@@ -1,0 +1,19 @@
+.settings-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-color: #ffffff !important; /* Force white background */
+  color: #000000; /* Black text for visibility */
+  min-height: 100vh;
+  padding: 20px;
+}
+
+.settings-container > div {
+  width: 80vw;
+  margin: 10px 0;
+  background-color: #f9f9f9; /* Light component background */
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+}
