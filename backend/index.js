@@ -18,6 +18,10 @@ const financeRoutes = require("./routes/finances");
 const inventoryRoutes = require("./routes/inventory");
 const staffRoutes = require("./routes/staff");
 const scheduleRoutes = require("./routes/schedule");
+const settingsRoutes = require('./routes/settings');
+const recurringRoutes = require('./routes/recurring-transactions');
+const enquiryRoutes = require('./routes/enquiries');
+const insightsRoutes = require('./routes/insights');
 
 // ✅ Use routes
 app.use("/api/members", memberRoutes);
@@ -25,6 +29,10 @@ app.use("/api/finances", financeRoutes);
 app.use("/api/inventory", inventoryRoutes);
 app.use("/api/staff", staffRoutes);
 app.use("/api/schedule", scheduleRoutes);
+app.use('/api/settings', settingsRoutes);
+app.use('/api/recurring', recurringRoutes);
+app.use('/api/enquiries', enquiryRoutes);
+app.use('/api/insights', insightsRoutes);
 
 // ✅ Root test route
 app.get("/", (req, res) => {
@@ -32,18 +40,19 @@ app.get("/", (req, res) => {
 });
 
 // ✅ Cron Job: Automatic Expiry Reminder SMS (7, 5, 3, 2, 1 days)
-cron.schedule("0 10 * * *", () => {
+cron.schedule("0 10 * * *", async () => {
   const daysArray = [1, 2, 3, 5, 7];
   const today = new Date();
 
-  daysArray.forEach((daysLeft) => {
+  for (const daysLeft of daysArray) {
     const targetDate = new Date(today);
     targetDate.setDate(today.getDate() + daysLeft);
     const formattedDate = targetDate.toISOString().split("T")[0];
 
-    const sql = "SELECT name, whatsapp, expiry_date FROM members WHERE expiry_date = ?";
-    db.query(sql, [formattedDate], async (err, results) => {
-      if (err || results.length === 0) return;
+    try {
+      const [results] = await db.execute("SELECT name, whatsapp, expiry_date FROM members WHERE expiry_date = ?", [formattedDate]);
+      
+      if (results.length === 0) continue;
 
       for (const member of results) {
         try {
@@ -62,8 +71,20 @@ cron.schedule("0 10 * * *", () => {
           console.error(`❌ Reminder SMS failed for ${member.name}:`, smsErr.message);
         }
       }
-    });
-  });
+    } catch (err) {
+      console.error(`❌ Database error in expiry reminder cron:`, err.message);
+    }
+  }
+});
+
+// ✅ Cron Job: Process recurring transactions daily at 9 AM
+cron.schedule("0 9 * * *", async () => {
+  try {
+    const response = await axios.post('http://localhost:5000/api/recurring/process-due');
+    console.log(`💰 Processed recurring transactions: ${response.data.message}`);
+  } catch (error) {
+    console.error('❌ Failed to process recurring transactions:', error.message);
+  }
 });
 
 // ✅ Start server

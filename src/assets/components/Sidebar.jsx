@@ -1,106 +1,114 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { NavLink } from "react-router-dom";
 import "./Sidebar.css";
-
 import {
-  FaFacebookF,
-  FaTwitter,
-  FaInstagram,
-  FaLinkedinIn,
+  FaTachometerAlt, FaUsers, FaCalendarAlt, FaBoxOpen, FaDollarSign, 
+  FaCog, FaChartLine, FaUserTie, FaQuestionCircle, FaSun, FaMoon, FaBars, FaTimes, FaChevronDown, FaChevronRight,
+  FaInstagram, FaEnvelope
 } from "react-icons/fa";
-import { FaChevronDown, FaChevronRight } from "react-icons/fa";
+import { useTheme } from '../../data/ThemeContext';
 
-const navItems = [
-  { label: "Home", path: "/" },
-  { label: "Members", path: "/members" },
-  { label: "Schedule", path: "/schedule" },
-  { label: "Staff", path: "/staff" },
-  { label: "Settings", path: "/settings" },
-  { label: "Insights", path: "/insights" },
-  { label: "Inventory", path: "/inventory" }
-];
+const Sidebar = () => {
+  const { theme, toggleTheme } = useTheme();
+  const [isOpen, setIsOpen] = useState(window.innerWidth > 768);
+  const [financesOpen, setFinancesOpen] = useState(false);
 
-function Sidebar() {
-  const [financeOpen, setFinanceOpen] = useState(false);
+  const handleToggle = () => setIsOpen(!isOpen);
+  const toggleFinances = () => setFinancesOpen(!financesOpen);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth > 768) {
+        setIsOpen(true);
+      } else {
+        setIsOpen(false);
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const navLinks = [
+    { to: "/", icon: <FaTachometerAlt />, text: "Dashboard" },
+    { to: "/members", icon: <FaUsers />, text: "Members" },
+    { to: "/staff", icon: <FaUserTie />, text: "Staff" },
+    { to: "/inventory", icon: <FaBoxOpen />, text: "Inventory" },
+    { to: "/schedule", icon: <FaCalendarAlt />, text: "Schedule" },
+    { to: "/insights", icon: <FaChartLine />, text: "Business Insights" },
+    { to: "/enquiries", icon: <FaQuestionCircle />, text: "Enquiries" },
+  ];
+  
+  const closeSidebarOnMobile = () => {
+    if (window.innerWidth <= 768) {
+      setIsOpen(false);
+    }
+  };
 
   return (
-    <nav className="sidebar">
-      <div>
-        <div className="logo">GymSoft</div>
-
-        <ul className="nav-list">
-          {navItems.map(({ label, path }) => (
-            <li key={path} className="nav-item">
-              <NavLink
-                to={path}
-                end
-                className={({ isActive }) =>
-                  isActive ? "nav-link active" : "nav-link"
-                }
-              >
-                {label}
-              </NavLink>
-            </li>
+    <>
+      <div className={`sidebar ${isOpen ? 'open' : 'closed'}`}>
+        <div className="sidebar-header">
+          <h1 className="logo">GymSoft</h1>
+          <button className="close-btn" onClick={handleToggle}><FaTimes /></button>
+        </div>
+        <nav className="sidebar-nav">
+          {navLinks.map(link => (
+            <NavLink key={link.to} to={link.to} onClick={closeSidebarOnMobile}>
+              {link.icon} <span>{link.text}</span>
+            </NavLink>
           ))}
-
+          
           {/* Finances Dropdown */}
-          <li className="nav-item">
-            <button
-              className="nav-link dropdown-toggle"
-              onClick={() => setFinanceOpen(!financeOpen)}
-            >
+          <div className="nav-dropdown">
+            <button className="nav-dropdown-btn" onClick={toggleFinances}>
+              <FaDollarSign />
               <span>Finances</span>
-              {financeOpen ? (
-                <FaChevronDown className="chevron-icon" />
-              ) : (
-                <FaChevronRight className="chevron-icon" />
-              )}
+              {financesOpen ? <FaChevronDown /> : <FaChevronRight />}
             </button>
+            <div className={`nav-dropdown-content ${financesOpen ? 'open' : ''}`}>
+              <NavLink to="/finances/view" onClick={closeSidebarOnMobile}>
+                <span>View Finances</span>
+              </NavLink>
+              <NavLink to="/finances/add" onClick={closeSidebarOnMobile}>
+                <span>Add Finance</span>
+              </NavLink>
+              <NavLink to="/finances/recurring" onClick={closeSidebarOnMobile}>
+                <span>Recurring Transactions</span>
+              </NavLink>
+            </div>
+          </div>
 
-            {financeOpen && (
-              <ul className="dropdown-menu">
-                <li>
-                  <NavLink
-                    to="/finances/add"
-                    className={({ isActive }) =>
-                      isActive ? "nav-link active" : "nav-link"
-                    }
-                  >
-                    Add Finance
-                  </NavLink>
-                </li>
-                <li>
-                  <NavLink
-                    to="/finances/view"
-                    className={({ isActive }) =>
-                      isActive ? "nav-link active" : "nav-link"
-                    }
-                  >
-                    View Finances
-                  </NavLink>
-                </li>
-              </ul>
-            )}
-          </li>
-        </ul>
+          {/* Help Link */}
+          <NavLink to="/help" onClick={closeSidebarOnMobile} className="help-link">
+            <FaQuestionCircle /> <span>Help & Guide</span>
+          </NavLink>
+        </nav>
+        <div className="sidebar-footer">
+          <div className="contact-info">
+            <h4>Contact Us</h4>
+            <div className="contact-icons">
+              <a href="https://www.instagram.com/solsparrow.co?igsh=OTR4cjNld3Zvdms4" target="_blank" rel="noopener noreferrer" className="contact-link" title="Instagram">
+                <FaInstagram />
+              </a>
+              <a href="mailto:Solsparrowhq@gmail.com" className="contact-link" title="Email">
+                <FaEnvelope />
+              </a>
+            </div>
+          </div>
+          <div className="sidebar-controls">
+            <button className="theme-toggle" onClick={toggleTheme}>
+              {theme === 'dark' ? <FaSun /> : <FaMoon />}
+              <span>{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
+            </button>
+            <NavLink to="/settings" className="settings-link" onClick={closeSidebarOnMobile}>
+              <FaCog /> <span>Settings</span>
+            </NavLink>
+          </div>
+        </div>
       </div>
-
-      <div className="social-container">
-        <a href="https://facebook.com" target="_blank" rel="noreferrer" aria-label="Facebook">
-          <FaFacebookF className="social-icon" />
-        </a>
-        <a href="https://twitter.com" target="_blank" rel="noreferrer" aria-label="Twitter">
-          <FaTwitter className="social-icon" />
-        </a>
-        <a href="https://instagram.com" target="_blank" rel="noreferrer" aria-label="Instagram">
-          <FaInstagram className="social-icon" />
-        </a>
-        <a href="https://linkedin.com" target="_blank" rel="noreferrer" aria-label="LinkedIn">
-          <FaLinkedinIn className="social-icon" />
-        </a>
-      </div>
-    </nav>
+      <button className="menu-btn" onClick={handleToggle}><FaBars /></button>
+    </>
   );
-}
+};
 
 export default Sidebar;

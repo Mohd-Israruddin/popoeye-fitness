@@ -1,9 +1,19 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import App from './App.jsx'
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import App from './App.jsx';
+import './index.css';
+import { AuthProvider } from './data/AuthContext.jsx';
+import { FinanceProvider } from './data/FinanceContext.jsx';
+import { ThemeProvider } from './data/ThemeContext.jsx';
 
-createRoot(document.getElementById('root')).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <React.StrictMode>
+    <AuthProvider>
+      <FinanceProvider>
+        <ThemeProvider>
+          <App />
+        </ThemeProvider>
+      </FinanceProvider>
+    </AuthProvider>
+  </React.StrictMode>,
 )

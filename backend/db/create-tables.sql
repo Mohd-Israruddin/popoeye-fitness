@@ -18,7 +18,11 @@ CREATE TABLE staff (
   phone VARCHAR(15),
   email VARCHAR(100),
   address TEXT,
-  photo VARCHAR(255)
+  photo VARCHAR(255),
+  status VARCHAR(20) DEFAULT 'Active',
+  salary DECIMAL(10, 2) DEFAULT 0.00,
+  bonus DECIMAL(10, 2) DEFAULT 0.00,
+  salary_status VARCHAR(20) DEFAULT 'Pending'
 );
 CREATE TABLE inventory (
   id INT AUTO_INCREMENT PRIMARY KEY,

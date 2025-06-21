@@ -30,14 +30,25 @@ router.post("/", async (req, res) => {
     package,
     total_amount,
     paid_amount,
+    height,
+    weight,
+    chest,
+    waist,
+    hips,
+    biceps,
+    thighs,
+    address,
+    health_issues,
+    blood_group,
+    extra_details,
   } = req.body;
 
   const pending_amount = total_amount - paid_amount;
 
   const sql = `
     INSERT INTO members 
-    (member_id, name, whatsapp, join_date, expiry_date, package, total_amount, paid_amount, pending_amount)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    (member_id, name, whatsapp, join_date, expiry_date, package, total_amount, paid_amount, pending_amount, height, weight, chest, waist, hips, biceps, thighs, address, health_issues, blood_group, extra_details)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `;
   const values = [
     member_id,
@@ -49,10 +60,44 @@ router.post("/", async (req, res) => {
     total_amount,
     paid_amount,
     pending_amount,
+    height,
+    weight,
+    chest,
+    waist,
+    hips,
+    biceps,
+    thighs,
+    address,
+    health_issues,
+    blood_group,
+    extra_details,
   ];
 
   try {
     const [result] = await db.query(sql, values);
+
+    // ✅ Record finance transaction for membership payment
+    let financeDate = join_date;
+    if (!financeDate) {
+      const today = new Date();
+      const offset = today.getTimezoneOffset();
+      today.setMinutes(today.getMinutes() - offset);
+      financeDate = today.toISOString().slice(0, 10);
+    }
+    if (paid_amount && paid_amount > 0) {
+      await db.query(
+        `INSERT INTO finances (date, type, amount, category, payment, description)
+         VALUES (?, ?, ?, ?, ?, ?)` ,
+        [
+          financeDate,
+          "income",
+          paid_amount,
+          "Membership",
+          "Cash",
+          `Membership payment for ${name}`
+        ]
+      );
+    }
 
     // ✅ Send Welcome SMS
     try {
@@ -91,6 +136,17 @@ router.put("/:id", async (req, res) => {
     package,
     total_amount,
     paid_amount,
+    height,
+    weight,
+    chest,
+    waist,
+    hips,
+    biceps,
+    thighs,
+    address,
+    health_issues,
+    blood_group,
+    extra_details,
   } = req.body;
 
   const pending_amount = total_amount - paid_amount;
@@ -99,7 +155,9 @@ router.put("/:id", async (req, res) => {
     UPDATE members SET 
       member_id = ?, name = ?, whatsapp = ?, 
       join_date = ?, expiry_date = ?, package = ?, 
-      total_amount = ?, paid_amount = ?, pending_amount = ?
+      total_amount = ?, paid_amount = ?, pending_amount = ?,
+      height = ?, weight = ?, chest = ?, waist = ?, hips = ?, biceps = ?, thighs = ?,
+      address = ?, health_issues = ?, blood_group = ?, extra_details = ?
     WHERE id = ?
   `;
   const values = [
@@ -112,6 +170,17 @@ router.put("/:id", async (req, res) => {
     total_amount,
     paid_amount,
     pending_amount,
+    height,
+    weight,
+    chest,
+    waist,
+    hips,
+    biceps,
+    thighs,
+    address,
+    health_issues,
+    blood_group,
+    extra_details,
     req.params.id,
   ];
 
@@ -263,6 +332,21 @@ router.get("/send-expiry-reminders", async (req, res) => {
     res.json({ message: `✅ Sent ${sent} reminder(s)` });
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+// Endpoint to get members whose expiry_date is within the next 7 days
+router.get('/expiring-soon', async (req, res) => {
+  try {
+    const [rows] = await db.query(`
+      SELECT id, name, expiry_date 
+      FROM members 
+      WHERE expiry_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY)
+      ORDER BY expiry_date ASC
+    `);
+    res.json(rows);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch expiring members', details: error.message });
   }
 });
 

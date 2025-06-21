@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 import {
   FaMoneyBillWave,
@@ -10,308 +10,288 @@ import {
   FaTimes,
   FaWifi,
   FaMobileAlt,
+  FaPlus,
+  FaUniversity,
+  FaPlusCircle,
+  FaMinusCircle,
+  FaRegCalendarCheck,
+  FaHistory,
+  FaStepBackward,
+  FaEdit,
+  FaEllipsisH,
 } from "react-icons/fa";
 import "./AddFinance.css";
-
-const getLocalDate = () => {
-  const d = new Date();
-  const offset = d.getTimezoneOffset();
-  d.setMinutes(d.getMinutes() - offset);
-  return d.toISOString().split("T")[0];
-};
-
-const today = getLocalDate();
-
-
-const defaultCategories = [
-  "Membership",
-  "Maintenance",
-  "Equipment",
-  "Salaries",
-  "Utilities",
-];
+import { useNavigate } from "react-router-dom";
+import eventBus from "../../service/event-bus";
 
 const AddFinance = () => {
   const [type, setType] = useState("income");
   const [amount, setAmount] = useState("");
-  const [date, setDate] = useState(today);
-  const [category, setCategory] = useState("Membership");
-  const [categories, setCategories] = useState(defaultCategories);
-  const [customCategoryInput, setCustomCategoryInput] = useState("");
-  const [payment, setPayment] = useState("Cash");
+  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+  const [category, setCategory] = useState("");
+  const [categories, setCategories] = useState([
+    { id: 1, name: "Membership", is_custom: false },
+    { id: 2, name: "Maintenance", is_custom: false },
+    { id: 3, name: "Equipment", is_custom: false },
+    { id: 4, name: "Salaries", is_custom: false },
+    { id: 5, name: "Utilities", is_custom: false },
+  ]);
+  const [customCategory, setCustomCategory] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("Cash");
   const [description, setDescription] = useState("");
-  const [latestTransaction, setLatestTransaction] = useState(null);
   const [message, setMessage] = useState("");
+  const [error, setError] = useState(false);
+  const [recentTransaction, setRecentTransaction] = useState(null);
 
-  const getQuickDate = (daysAgo = 0) => {
-    const d = new Date();
-    d.setDate(d.getDate() - daysAgo);
-    const offset = d.getTimezoneOffset();
-    d.setMinutes(d.getMinutes() - offset);
-    return d.toISOString().split("T")[0];
+  const navigate = useNavigate();
+
+  const formatDate = (date) => {
+    return new Date(date).toISOString().split("T")[0];
   };
 
-  const quickDates = {
-    Today: getQuickDate(0),
-    Yesterday: getQuickDate(1),
-    "Day Before": getQuickDate(2),
+  const getYesterday = () => {
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    return formatDate(yesterday);
+  };
+
+  const getDayBefore = () => {
+    const today = new Date();
+    const dayBefore = new Date(today);
+    dayBefore.setDate(dayBefore.getDate() - 2);
+    return formatDate(dayBefore);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const data = {
+    if (!category) {
+      setError(true);
+      setMessage("Please select or add a category.");
+      setTimeout(() => {
+        setMessage("");
+        setError(false);
+      }, 3000);
+      return;
+    }
+    const financeData = {
       type,
-      amount: parseFloat(amount),
+      amount,
       date,
       category,
-      payment,
+      payment: paymentMethod,
       description,
     };
 
     try {
-      const response = await axios.post("http://localhost:5000/api/finances", data);
-      const newEntry = response.data;
+      const response = await axios.post("http://localhost:5000/api/finances", financeData);
+      setMessage("Transaction added successfully!");
+      setError(false);
+      setRecentTransaction(response.data);
 
-      setLatestTransaction(newEntry);
+      if (financeData.type === 'expense') {
+        eventBus.dispatch('expense-added', { amount: financeData.amount });
+      }
+
+      // Reset form
       setAmount("");
       setDescription("");
-      setDate(today);
-      setMessage("Finance entry added successfully!");
-      setTimeout(() => setMessage(""), 3000);
-    } catch (error) {
-      console.error("Error adding finance entry:", error);
-      setMessage("Failed to save entry.");
-      setTimeout(() => setMessage(""), 3000);
+      setTimeout(() => {
+        setMessage("");
+      }, 3000);
+    } catch (err) {
+      setError(true);
+      setMessage(err.response?.data?.message || "Error adding transaction.");
+      setTimeout(() => {
+        setMessage("");
+        setError(false);
+      }, 3000);
     }
   };
 
-  const handleAddCustomCategory = () => {
-    const trimmed = customCategoryInput.trim();
-    if (trimmed && !categories.includes(trimmed)) {
-      setCategories([...categories, trimmed]);
-      setCategory(trimmed);
-      setCustomCategoryInput("");
-    }
+  const handleAddCategory = () => {
+    if (customCategory.trim() === "") return;
+    const newCategory = {
+      id: Date.now(),
+      name: customCategory.trim(),
+      is_custom: true
+    };
+    setCategories([...categories, newCategory]);
+    setCategory(newCategory.name);
+    setCustomCategory("");
   };
 
-  const handleRemoveCategory = (cat) => {
-    const newCategories = categories.filter((c) => c !== cat);
+  const handleRemoveCategory = (id) => {
+    const newCategories = categories.filter((c) => c.id !== id);
     setCategories(newCategories);
-    if (category === cat && newCategories.length > 0) {
-      setCategory(newCategories[0]);
+    if (category === categories.find(c => c.id === id)?.name) {
+      setCategory(newCategories.length > 0 ? newCategories[0].name : "");
     }
   };
 
   return (
-    <>
+    <div className="add-finance-page">
+      <div className="hero-section">
+        <div className="hero-content">
+          <h1>Add a New Transaction</h1>
+          <p>Log your income and expenses to keep your finances in order.</p>
+        </div>
+      </div>
       <div className="form-container">
         <form className="finance-form" onSubmit={handleSubmit}>
-          <h2 className="form-title">Add Finance Entry</h2>
+          <h2 className="form-title">Finance Details</h2>
+          <div className="form-grid">
+            <div className="type-selector">
+              <button
+                type="button"
+                className={`type-button ${type === 'income' ? 'active-income' : ''}`}
+                onClick={() => setType('income')}
+              >
+                <FaMoneyBillWave /> Income
+              </button>
+              <button
+                type="button"
+                className={`type-button ${type === 'expense' ? 'active-expense' : ''}`}
+                onClick={() => setType('expense')}
+              >
+                <FaMoneyCheckAlt /> Expense
+              </button>
+            </div>
 
-          <div className="type-selector">
-            <button
-              type="button"
-              onClick={() => setType("income")}
-              className={`type-button ${type === "income" ? "active-income" : ""}`}
-            >
-              <FaMoneyBillWave /> Income
-            </button>
-            <button
-              type="button"
-              onClick={() => setType("expense")}
-              className={`type-button ${type === "expense" ? "active-expense" : ""}`}
-            >
-              <FaMoneyCheckAlt /> Expense
-            </button>
-          </div>
-
-          <div className="input-row">
             <div className="input-group">
-              <label>Amount</label>
+              <label htmlFor="amount">Amount</label>
               <div className="input-with-icon">
-                <FaRupeeSign className="icon" />
+                <span className="icon"><FaRupeeSign /></span>
                 <input
                   type="number"
+                  id="amount"
+                  placeholder="Enter amount"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  min="0"
                   required
                 />
               </div>
             </div>
 
             <div className="input-group">
-              <label>Date</label>
+              <label htmlFor="date">Date</label>
               <div className="input-with-icon">
-                <FaCalendarAlt className="icon" />
+                <span className="icon"><FaCalendarAlt /></span>
                 <input
                   type="date"
+                  id="date"
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
+                  required
                 />
+              </div>
+            </div>
+
+            <div className="quick-dates">
+              <button type="button" className="quick-date-button" onClick={() => setDate(formatDate(new Date()))}>
+                <FaCalendarAlt /> Today
+              </button>
+              <button type="button" className="quick-date-button" onClick={() => setDate(getYesterday())}>
+                <FaCalendarAlt /> Yesterday
+              </button>
+              <button type="button" className="quick-date-button" onClick={() => setDate(getDayBefore())}>
+                <FaCalendarAlt /> Day Before
+              </button>
+            </div>
+
+            <div className="input-group">
+              <label>Category</label>
+              <div className="category-selector">
+                {categories.map((cat) => (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    className={`category-button ${category === cat.name ? 'active' : ''}`}
+                    onClick={() => setCategory(cat.name)}
+                  >
+                    {cat.name}
+                    {cat.is_custom ? (
+                      <span className="remove-icon" onClick={(e) => { e.stopPropagation(); handleRemoveCategory(cat.id); }}>
+                        <FaTimes />
+                      </span>
+                    ) : null}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="custom-category-section">
+              <input
+                type="text"
+                className="custom-category-input"
+                placeholder="Or add a new category"
+                value={customCategory}
+                onChange={(e) => setCustomCategory(e.target.value)}
+              />
+              <button type="button" className="add-category-btn" onClick={handleAddCategory}>
+                <FaPlus /> Add
+              </button>
+            </div>
+
+            <div className="input-group">
+              <label>Payment Method</label>
+              <div className="payment-methods">
+                <button type="button" className={`payment-button ${paymentMethod === 'Cash' ? 'active' : ''}`} onClick={() => setPaymentMethod('Cash')}>
+                  <FaMoneyBillWave className="icon" /> Cash
+                </button>
+                <button type="button" className={`payment-button ${paymentMethod === 'Card' ? 'active' : ''}`} onClick={() => setPaymentMethod('Card')}>
+                  <FaCreditCard className="icon" /> Card
+                </button>
+                <button type="button" className={`payment-button ${paymentMethod === 'Bank Transfer' ? 'active' : ''}`} onClick={() => setPaymentMethod('Bank Transfer')}>
+                  <FaWifi className="icon" /> Bank Transfer
+                </button>
+                <button type="button" className={`payment-button ${paymentMethod === 'UPI' ? 'active' : ''}`} onClick={() => setPaymentMethod('UPI')}>
+                  <FaMobileAlt className="icon" /> UPI
+                </button>
+              </div>
+            </div>
+
+            <div className="input-group">
+              <label htmlFor="description">Description</label>
+              <div className="input-with-icon">
+                <span className="icon"><FaPen /></span>
+                <textarea
+                  id="description"
+                  placeholder="Add a description (optional)"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  rows="3"
+                ></textarea>
               </div>
             </div>
           </div>
 
-          <div className="quick-dates">
-            {Object.entries(quickDates).map(([label, value]) => (
-              <button
-                key={label}
-                type="button"
-                className="quick-date-button"
-                onClick={() => setDate(value)}
-              >
-                <FaCalendarAlt style={{ marginRight: "6px" }} /> {label}
-              </button>
-            ))}
-          </div>
-
-          <div className="input-group">
-            <label>Category</label>
-            <div className="category-selector">
-              {categories.map((cat) => (
-                <div key={cat} style={{ position: "relative" }}>
-                  <button
-                    type="button"
-                    onClick={() => setCategory(cat)}
-                    className={`category-button ${category === cat ? "active" : ""}`}
-                  >
-                    {cat}
-                  </button>
-                  {!defaultCategories.includes(cat) && (
-                    <FaTimes
-                      className="icon"
-                      style={{
-                        position: "absolute",
-                        top: "-6px",
-                        right: "-6px",
-                        background: "white",
-                        borderRadius: "50%",
-                        fontSize: "12px",
-                        color: "#c0392b",
-                        cursor: "pointer",
-                      }}
-                      onClick={() => handleRemoveCategory(cat)}
-                    />
-                  )}
-                </div>
-              ))}
-            </div>
-
-            <div style={{ marginTop: "10px", display: "flex", gap: "8px" }}>
-              <input
-                type="text"
-                className="custom-category-input"
-                placeholder="Add custom category"
-                value={customCategoryInput}
-                onChange={(e) => setCustomCategoryInput(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleAddCustomCategory()}
-              />
-              <button
-                type="button"
-                onClick={handleAddCustomCategory}
-                className="quick-date-button"
-                style={{ backgroundColor: "#2980b9", color: "white" }}
-              >
-                Add
-              </button>
-            </div>
-          </div>
-
-          <div className="input-group">
-            <label>Payment Method</label>
-            <div className="payment-methods">
-              {[
-                { name: "Cash", icon: <FaMoneyBillWave className="icon" /> },
-                { name: "Card", icon: <FaCreditCard className="icon" /> },
-                { name: "Bank Transfer", icon: <FaWifi className="icon" /> },
-                { name: "UPI", icon: <FaMobileAlt className="icon" /> },
-              ].map(({ name, icon }) => (
-                <button
-                  key={name}
-                  type="button"
-                  className={`payment-button ${payment === name ? "active" : ""}`}
-                  onClick={() => setPayment(name)}
-                >
-                  {icon} {name}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="input-group">
-            <label>Description</label>
-            <div className="input-with-icon">
-              <FaPen className="icon" />
-              <textarea
-                rows="2"
-                placeholder="e.g., Bought resistance bands for gym use"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-              />
-            </div>
-          </div>
-
           <div className="action-buttons">
-            <button type="button" className="cancel-button">
+            <button type="button" className="cancel-button" onClick={() => navigate('/finances/view')}>
               Cancel
             </button>
             <button type="submit" className="save-button">
-              Save Entry
+              <FaPlus /> Save Entry
             </button>
           </div>
 
           {message && (
-            <div className="message-box">{message}</div>
+            <div className={`message-box ${error ? "error" : "success"}`}>
+              {message}
+            </div>
           )}
         </form>
+
+        {recentTransaction && (
+          <div className="recent-transaction">
+            <h3>Last Entry:</h3>
+            <p><strong>Type:</strong> {recentTransaction.type}</p>
+            <p><strong>Amount:</strong> ${recentTransaction.amount}</p>
+            <p><strong>Category:</strong> {recentTransaction.category}</p>
+          </div>
+        )}
       </div>
-
-      {latestTransaction && (
-        <div className="recent-transaction">
-          <h3>Recently Added Transaction</h3>
-          <p><strong>Type:</strong> {latestTransaction.type}</p>
-          <p><strong>Amount:</strong> ₹{latestTransaction.amount}</p>
-          <p><strong>Date:</strong> {latestTransaction.date?.slice(0, 10)}</p>
-          <p><strong>Category:</strong> {latestTransaction.category}</p>
-          <p><strong>Payment:</strong> {latestTransaction.payment}</p>
-          {latestTransaction.description && (
-            <p><strong>Description:</strong> {latestTransaction.description}</p>
-          )}
-        </div>
-      )}
-
-      <style>{`
-        .recent-transaction {
-          margin: 20px auto;
-          max-width: 400px;
-          background: #e9f5f9;
-          border-left: 6px solid #1976d2;
-          padding: 15px 20px;
-          border-radius: 8px;
-          font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-          box-shadow: 0 4px 12px rgba(25, 118, 210, 0.2);
-        }
-        .recent-transaction h3 {
-          margin-bottom: 12px;
-          color: #1976d2;
-        }
-        .recent-transaction p {
-          margin: 4px 0;
-          font-size: 15px;
-          color: #333;
-        }
-        .message-box {
-          margin-top: 12px;
-          padding: 10px;
-          background: #dff0d8;
-          color: #3c763d;
-          border: 1px solid #d6e9c6;
-          border-radius: 4px;
-          font-size: 14px;
-        }
-      `}</style>
-    </>
+    </div>
   );
 };
 

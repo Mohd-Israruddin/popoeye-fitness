@@ -1,119 +1,57 @@
-import React, { useState } from "react";
-import "./Staff.css";
+import React from 'react';
+import './StaffCard.css';
+import { FaUser, FaPhone, FaEnvelope, FaIdCard, FaMoneyBillWave, FaEdit, FaTrash } from 'react-icons/fa';
 
-const StaffCard = ({ staff, onDelete, onUpdate, onClick }) => {
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editedStaff, setEditedStaff] = useState({ ...staff });
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setEditedStaff((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleSave = () => {
-    onUpdate(editedStaff);
-    setIsModalOpen(false);
-  };
+const StaffCard = ({ staffMember, onSelect, onEdit, onDelete, isWidget }) => {
+  const cardClassName = isWidget ? 'staff-card widget-view' : 'staff-card';
 
   return (
-    <>
-      <div className="staff-card" onClick={() => !isModalOpen && onClick()}>
-        <img
-          src={staff.photo || "https://via.placeholder.com/100"}
-          alt={staff.name}
-          className="staff-photo"
-        />
-        <h4>{staff.name}</h4>
-        <p>
-          <strong>Role:</strong> {staff.role}
-        </p>
-        <p>
-          <strong>Phone:</strong> {staff.phone}
-        </p>
-        <div className="card-buttons">
-          <button
-            className="edit-btn"
-            onClick={(e) => {
-              e.stopPropagation();
-              setIsModalOpen(true);
-            }}
-          >
-            Edit
-          </button>
-          <button
-            className="delete-btn"
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete(staff.id);
-            }}
-          >
-            Delete
-          </button>
+    <div className={cardClassName} onClick={() => !isWidget && onSelect(staffMember)}>
+      <div className="staff-card-header">
+        <FaUser className="staff-icon" />
+        <h3 className="staff-name">{staffMember.name}</h3>
+      </div>
+      <div className="staff-card-body">
+        <div className="staff-info-item">
+          <FaIdCard />
+          <span>{staffMember.position}</span>
+        </div>
+        {!isWidget && (
+          <>
+            <div className="staff-info-item">
+              <FaEnvelope />
+              <span>{staffMember.email}</span>
+            </div>
+            <div className="staff-info-item">
+              <FaPhone />
+              <span>{staffMember.phone}</span>
+            </div>
+          </>
+        )}
+        <div className="staff-info-item">
+          <FaMoneyBillWave />
+          <span>Salary: ₹{staffMember.salary}</span>
         </div>
       </div>
-
-      {isModalOpen && (
-        <div
-          className="modal-overlay"
-          onClick={() => setIsModalOpen(false)}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="edit-modal-title"
-        >
-          <div
-            className="modal-content"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 id="edit-modal-title">Edit Staff</h3>
-            <input
-              name="name"
-              value={editedStaff.name}
-              onChange={handleChange}
-              placeholder="Name"
-              required
-            />
-            <input
-              name="role"
-              value={editedStaff.role}
-              onChange={handleChange}
-              placeholder="Role"
-              required
-            />
-            <input
-              name="phone"
-              value={editedStaff.phone}
-              onChange={handleChange}
-              placeholder="Phone"
-              required
-            />
-            <input
-              name="email"
-              value={editedStaff.email || ""}
-              onChange={handleChange}
-              placeholder="Email"
-            />
-            <input
-              name="address"
-              value={editedStaff.address || ""}
-              onChange={handleChange}
-              placeholder="Address"
-            />
-            <input
-              name="photo"
-              value={editedStaff.photo}
-              onChange={handleChange}
-              placeholder="Photo URL"
-            />
-            <div className="modal-actions">
-              <button onClick={handleSave}>Save</button>
-              <button className="cancel-btn" onClick={() => setIsModalOpen(false)}>
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
+      {!isWidget && (
+         <div className="staff-card-footer">
+            <button className="edit-button" onClick={(e) => {
+                e.stopPropagation();
+                onEdit(staffMember);
+            }}>
+                <FaEdit /> Edit
+            </button>
+            <button className="delete-button" onClick={(e) => {
+                e.stopPropagation();
+                if (window.confirm(`Are you sure you want to delete ${staffMember.name}?`)) {
+                    onDelete(staffMember.id);
+                }
+            }}>
+                <FaTrash /> Delete
+            </button>
+         </div>
       )}
-    </>
+    </div>
   );
 };
 

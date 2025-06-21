@@ -1,72 +1,39 @@
-import React, { useState } from "react";
-import "./Staff.css";
+import React from 'react';
+import { FaPhone, FaEnvelope, FaMapMarkerAlt, FaTimes, FaMoneyBillWave, FaCheckCircle, FaExclamationCircle } from 'react-icons/fa';
 
-const StaffModal = ({ staff, onClose, onUpdate, onDelete }) => {
-  const [editedStaff, setEditedStaff] = useState({ ...staff });
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setEditedStaff((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleSave = () => {
-    onUpdate(editedStaff);
-    onClose();
-  };
+const StaffDetailModal = ({ staff, onClose, onMarkSalaryPaid }) => {
+  const salaryStatusPaid = staff.salary_status === 'Paid';
 
   return (
-    <div className="staff-modal-backdrop" onClick={onClose}>
-      <div className="staff-modal" onClick={(e) => e.stopPropagation()}>
-        <img
-          className="staff-photo large"
-          src={editedStaff.photo || "https://via.placeholder.com/150"}
-          alt={editedStaff.name}
-        />
-        <input
-          name="name"
-          value={editedStaff.name}
-          onChange={handleChange}
-          placeholder="Name"
-          required
-        />
-        <input
-          name="role"
-          value={editedStaff.role}
-          onChange={handleChange}
-          placeholder="Role"
-          required
-        />
-        <input
-          name="phone"
-          value={editedStaff.phone}
-          onChange={handleChange}
-          placeholder="Phone"
-          required
-        />
-        <input
-          name="email"
-          value={editedStaff.email || ""}
-          onChange={handleChange}
-          placeholder="Email"
-          type="email"
-        />
-        <input
-          name="address"
-          value={editedStaff.address || ""}
-          onChange={handleChange}
-          placeholder="Address"
-        />
-        <input
-          name="photo"
-          value={editedStaff.photo || ""}
-          onChange={handleChange}
-          placeholder="Photo URL"
-        />
-        <div className="card-buttons">
-          <button onClick={handleSave}>Save</button>
-          <button onClick={() => onDelete(staff.id)}>Delete</button>
-          <button className="cancel-btn" onClick={onClose}>
-            Close
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" onClick={(e) => e.stopPropagation()}>
+        <button className="close-btn" onClick={onClose}><FaTimes /></button>
+        <img src={staff.photo || 'https://placehold.co/150'} alt={staff.name} className="modal-img" />
+        <h2 id="modal-title">{staff.name}</h2>
+        <p className="modal-role">{staff.role}</p>
+        
+        <div className="modal-info">
+          <p><FaPhone /> {staff.phone}</p>
+          {staff.email && <p><FaEnvelope /> {staff.email}</p>}
+          {staff.address && <p><FaMapMarkerAlt /> {staff.address}</p>}
+        </div>
+
+        <div className="modal-finance-details">
+          <h4>Financials</h4>
+          <p><FaMoneyBillWave /> Salary: <strong>₹{(staff.salary || 0).toLocaleString()}</strong></p>
+          <div className={`salary-status ${salaryStatusPaid ? 'paid' : 'pending'}`}>
+            {salaryStatusPaid ? <FaCheckCircle /> : <FaExclamationCircle />}
+            <span>Salary Status: <strong>{staff.salary_status}</strong></span>
+          </div>
+        </div>
+
+        <div className="modal-actions">
+          <button 
+            className={`btn ${salaryStatusPaid ? 'btn-secondary' : 'btn-primary'}`}
+            onClick={() => onMarkSalaryPaid(staff.id, salaryStatusPaid ? 'Pending' : 'Paid')}
+            disabled={salaryStatusPaid}
+          >
+            {salaryStatusPaid ? 'Paid' : 'Mark as Paid'}
           </button>
         </div>
       </div>
@@ -74,5 +41,5 @@ const StaffModal = ({ staff, onClose, onUpdate, onDelete }) => {
   );
 };
 
-export default StaffModal;
+export default StaffDetailModal;
 
