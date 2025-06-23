@@ -20,7 +20,7 @@ router.post('/', async (req, res) => {
     const [existing] = await db.query('SELECT COUNT(*) as count FROM settings');
     if (existing[0].count > 0) {
       await db.query(
-        'UPDATE settings SET gym_name=?, contact_email=?, contact_phone=?, opening_hours=?, notifications_enabled=?',
+        'UPDATE settings SET gym_name=?, contact_email=?, contact_phone=?, opening_hours=?, notifications_enabled=?, updated_at=NOW()',
         [gym_name, contact_email, contact_phone, opening_hours, notifications_enabled]
       );
     } else {
@@ -96,7 +96,7 @@ router.post('/admin/change-passkey', async (req, res) => {
       return res.status(401).json({ error: 'Old pass key is incorrect.' });
     }
     const newHash = await bcrypt.hash(new_passkey, 10);
-    await db.query('UPDATE admin SET passkey_hash=? WHERE id=?', [newHash, admin.id]);
+    await db.query('UPDATE admin SET passkey_hash=?, updated_at=NOW() WHERE id=?', [newHash, admin.id]);
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -116,7 +116,7 @@ router.post('/admin/reset-passkey', async (req, res) => {
     }
     const admin = rows[0];
     const newHash = await bcrypt.hash(new_passkey, 10);
-    await db.query('UPDATE admin SET passkey_hash=? WHERE id=?', [newHash, admin.id]);
+    await db.query('UPDATE admin SET passkey_hash=?, updated_at=NOW() WHERE id=?', [newHash, admin.id]);
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -192,7 +192,7 @@ router.post('/expense-limit', async (req, res) => {
     return res.status(400).json({ error: 'Invalid expense limit amount.' });
   }
   try {
-    const [result] = await db.query('UPDATE settings SET expense_limit=? LIMIT 1', [limit]);
+    const [result] = await db.query('UPDATE settings SET expense_limit=?, updated_at=NOW() LIMIT 1', [limit]);
     if (result.affectedRows === 0) {
       await db.query('INSERT INTO settings (expense_limit) VALUES (?)', [limit]);
     }
@@ -217,7 +217,7 @@ router.post('/dashboard-layout', async (req, res) => {
   const { layout } = req.body;
   try {
     const layoutString = JSON.stringify(layout);
-    await db.query('UPDATE settings SET dashboard_layout=? LIMIT 1', [layoutString]);
+    await db.query('UPDATE settings SET dashboard_layout=?, updated_at=NOW() LIMIT 1', [layoutString]);
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });

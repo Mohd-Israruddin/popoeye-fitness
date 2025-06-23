@@ -64,7 +64,7 @@ const MemberTable = ({ members, onEdit, onDelete, onOpenBodyMeasurements }) => {
     if (!confirm) return;
 
     try {
-      await axios.post("http://localhost:5000/api/members/delete-multiple", {
+      await axios.post("https://solsparrow-backend.onrender.com/api/members/delete-multiple", {
         ids: selected,
       });
       alert("🗑️ Selected members deleted.");
@@ -81,7 +81,7 @@ const MemberTable = ({ members, onEdit, onDelete, onOpenBodyMeasurements }) => {
     if (!confirm) return;
 
     try {
-      await axios.delete(`http://localhost:5000/api/members/${id}`);
+      await axios.delete(`https://solsparrow-backend.onrender.com/api/members/${id}`);
       alert("🗑️ Member deleted.");
       onDelete([id]);
     } catch (error) {

@@ -81,7 +81,7 @@ const ViewFinance = () => {
   const fetchEntries = async () => {
     try {
       setLoading(true);
-      const res = await axios.get("http://localhost:5000/api/finances");
+      const res = await axios.get("https://solsparrow-backend.onrender.com/api/finances");
       setEntries(res.data);
     } catch (err) {
       console.error("Failed to fetch entries:", err);
@@ -92,7 +92,7 @@ const ViewFinance = () => {
 
   const fetchMembers = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/members");
+      const res = await axios.get("https://solsparrow-backend.onrender.com/api/members");
       setMembers(res.data);
     } catch (err) {
       console.error("Failed to fetch members:", err);
@@ -102,7 +102,7 @@ const ViewFinance = () => {
   const deleteEntry = async (index) => {
     const id = entries[index].id;
     try {
-      await axios.delete(`http://localhost:5000/api/finances/${id}`);
+      await axios.delete(`https://solsparrow-backend.onrender.com/api/finances/${id}`);
       fetchEntries();
     } catch (err) {
       console.error("Failed to delete entry:", err);
@@ -112,7 +112,7 @@ const ViewFinance = () => {
   const updateEntry = async () => {
     try {
       const id = editedEntry.id;
-      await axios.put(`http://localhost:5000/api/finances/${id}`, editedEntry);
+      await axios.put(`https://solsparrow-backend.onrender.com/api/finances/${id}`, editedEntry);
       fetchEntries();
       setEditIndex(null);
     } catch (err) {
@@ -123,7 +123,7 @@ const ViewFinance = () => {
   const processRecurringTransactions = async () => {
     try {
       setLoading(true);
-      const response = await axios.post("http://localhost:5000/api/recurring/process-due");
+      const response = await axios.post("https://solsparrow-backend.onrender.com/api/recurring/process-due");
       alert(response.data.message);
       fetchEntries(); // Refresh the list to show new entries
       eventBus.dispatch('staff-data-updated'); // Signal staff page to update

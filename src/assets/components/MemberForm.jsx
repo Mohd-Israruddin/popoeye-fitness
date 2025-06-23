@@ -121,6 +121,7 @@ const MemberForm = ({ member, onSave, onClose }) => {
               value={data.package}
               onChange={handleChange}
               required
+              className="package-select"
             >
               <option value="">Select package duration</option>
               <option value="1 month">1 Month</option>

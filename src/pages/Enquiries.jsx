@@ -37,7 +37,7 @@ const Enquiries = () => {
     const fetchEnquiries = async () => {
         setLoading(true);
         try {
-            const res = await axios.get('http://localhost:5000/api/enquiries');
+            const res = await axios.get('https://solsparrow-backend.onrender.com/api/enquiries');
             setEnquiries(res.data);
         } catch (err) {
             setMessage({ type: 'error', text: 'Failed to fetch enquiries.' });
@@ -70,8 +70,8 @@ const Enquiries = () => {
         }
         
         const url = editingEnquiry
-            ? `http://localhost:5000/api/enquiries/${editingEnquiry.id}`
-            : 'http://localhost:5000/api/enquiries';
+            ? `https://solsparrow-backend.onrender.com/api/enquiries/${editingEnquiry.id}`
+            : 'https://solsparrow-backend.onrender.com/api/enquiries';
         const method = editingEnquiry ? 'put' : 'post';
 
         try {
@@ -127,7 +127,7 @@ const Enquiries = () => {
     const handleDelete = async (id) => {
         if (window.confirm('Are you sure you want to delete this enquiry?')) {
             try {
-                await axios.delete(`http://localhost:5000/api/enquiries/${id}`);
+                await axios.delete(`https://solsparrow-backend.onrender.com/api/enquiries/${id}`);
                 setMessage({ type: 'success', text: 'Enquiry deleted.' });
                 fetchEnquiries();
             } catch (err) {

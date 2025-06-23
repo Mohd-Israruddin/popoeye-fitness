@@ -157,7 +157,8 @@ router.put("/:id", async (req, res) => {
       join_date = ?, expiry_date = ?, package = ?, 
       total_amount = ?, paid_amount = ?, pending_amount = ?,
       height = ?, weight = ?, chest = ?, waist = ?, hips = ?, biceps = ?, thighs = ?,
-      address = ?, health_issues = ?, blood_group = ?, extra_details = ?
+      address = ?, health_issues = ?, blood_group = ?, extra_details = ?,
+      updated_at = NOW()
     WHERE id = ?
   `;
   const values = [

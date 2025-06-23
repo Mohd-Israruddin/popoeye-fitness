@@ -44,7 +44,7 @@ router.put("/:id", async (req, res) => {
 
   try {
     const [result] = await db.query(
-      "UPDATE enquiries SET name = ?, phone = ?, email = ?, source = ?, interest = ?, status = ?, follow_up_date = ?, notes = ? WHERE id = ?",
+      "UPDATE enquiries SET name = ?, phone = ?, email = ?, source = ?, interest = ?, status = ?, follow_up_date = ?, notes = ?, updated_at = NOW() WHERE id = ?",
       [name, phone, email, source, interest, status, follow_up_date, notes, id]
     );
     if (result.affectedRows === 0) {

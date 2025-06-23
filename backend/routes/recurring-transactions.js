@@ -95,7 +95,7 @@ router.put("/:id", async (req, res) => {
     await db.execute(`
       UPDATE recurring_transactions 
       SET name=?, type=?, amount=?, category=?, payment=?, description=?, 
-          frequency=?, start_date=?, end_date=?, is_active=?, next_due_date=?, staff_id=?
+          frequency=?, start_date=?, end_date=?, is_active=?, next_due_date=?, staff_id=?, updated_at=NOW()
       WHERE id=?
     `, [name, type, amount, category, payment, description, frequency, formattedStartDate, formattedEndDate, is_active, nextDueDate, processedStaffId, id]);
 

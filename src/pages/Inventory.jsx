@@ -183,7 +183,7 @@ const Inventory = () => {
         };
 
         try {
-            const res = await fetch("http://localhost:5000/api/inventory/add", {
+            const res = await fetch("https://solsparrow-backend.onrender.com/api/inventory/add", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({

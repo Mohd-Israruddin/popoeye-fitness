@@ -47,7 +47,7 @@ const Schedule = () => {
 
   const fetchMembers = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/members");
+      const res = await axios.get("https://solsparrow-backend.onrender.com/api/members");
       setMembers(res.data.map(m => m.name));
     } catch (err) {
       console.error("Error fetching members", err);
@@ -57,7 +57,7 @@ const Schedule = () => {
 
   const fetchTrainers = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/staff");
+      const res = await axios.get("https://solsparrow-backend.onrender.com/api/staff");
       setTrainers(res.data);
     } catch (err) {
       console.error("Error fetching staff", err);
@@ -68,7 +68,7 @@ const Schedule = () => {
   const fetchBookings = async () => {
     try {
       setLoading(true);
-      const res = await axios.get("http://localhost:5000/api/schedule");
+      const res = await axios.get("https://solsparrow-backend.onrender.com/api/schedule");
       setBookings(res.data);
     } catch (err) {
       console.error("Error fetching bookings", err);
@@ -111,7 +111,7 @@ const Schedule = () => {
       if (editIndex !== null) {
         // Update existing booking
         const bookingToUpdate = slotBookings[editIndex];
-        await axios.put(`http://localhost:5000/api/schedule/${bookingToUpdate.id}`, {
+        await axios.put(`https://solsparrow-backend.onrender.com/api/schedule/${bookingToUpdate.id}`, {
           day: selectedSlot.day,
           time: selectedSlot.time,
           ...form,
@@ -125,7 +125,7 @@ const Schedule = () => {
         setSuccessMessage(`Booking updated for ${form.member} in ${form.category}`);
       } else {
         // Create new booking
-        const res = await axios.post("http://localhost:5000/api/schedule", {
+        const res = await axios.post("https://solsparrow-backend.onrender.com/api/schedule", {
           day: selectedSlot.day,
           time: selectedSlot.time,
           ...form,
@@ -166,7 +166,7 @@ const Schedule = () => {
     try {
       setLoading(true);
       setErrorMessage("");
-      await axios.post("http://localhost:5000/api/members", { name: newMember });
+      await axios.post("https://solsparrow-backend.onrender.com/api/members", { name: newMember });
       setMembers([...members, newMember]);
       setNewMember("");
       setSuccessMessage("Member added successfully");
@@ -219,7 +219,7 @@ const Schedule = () => {
       setErrorMessage("");
       
       // Delete the booking from backend
-      await axios.delete(`http://localhost:5000/api/schedule/${lastBooking.booking.id}`);
+      await axios.delete(`https://solsparrow-backend.onrender.com/api/schedule/${lastBooking.booking.id}`);
       
       // Update frontend state
       const { key, booking } = lastBooking;
@@ -245,7 +245,7 @@ const Schedule = () => {
     try {
       setLoading(true);
       setErrorMessage("");
-      await axios.delete("http://localhost:5000/api/schedule");
+      await axios.delete("https://solsparrow-backend.onrender.com/api/schedule");
       setBookings({});
       setLastBooking(null);
       setSuccessMessage("Schedule reset successfully");
@@ -268,7 +268,7 @@ const Schedule = () => {
     try {
       setLoading(true);
       setErrorMessage("");
-      await axios.delete(`http://localhost:5000/api/schedule/${booking.id}`);
+      await axios.delete(`https://solsparrow-backend.onrender.com/api/schedule/${booking.id}`);
       
       const updated = bookings[key].filter((_, idx) => idx !== index);
       const updatedBookings = { ...bookings, [key]: updated };
