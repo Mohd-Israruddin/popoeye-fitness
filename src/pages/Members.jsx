@@ -34,7 +34,7 @@ const Members = () => {
 
   const fetchMembers = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/members");
+      const res = await axios.get("https://solsparrow-backend.onrender.com/api/members");
       setMembers(res.data);
       setFilteredMembers(res.data);
     } catch (error) {
@@ -76,9 +76,9 @@ const Members = () => {
   const handleSave = async (newMember) => {
     try {
       if (editing) {
-        await axios.put(`http://localhost:5000/api/members/${editing.id}`, newMember);
+        await axios.put(`https://solsparrow-backend.onrender.com/api/members/${editing.id}`, newMember);
       } else {
-        await axios.post("http://localhost:5000/api/members", newMember);
+        await axios.post("https://solsparrow-backend.onrender.com/api/members", newMember);
       }
       setShowForm(false);
       setEditing(null);
@@ -90,7 +90,7 @@ const Members = () => {
 
   const handleDelete = async (ids) => {
     try {
-      await Promise.all(ids.map((id) => axios.delete(`http://localhost:5000/api/members/${id}`)));
+      await Promise.all(ids.map((id) => axios.delete(`https://solsparrow-backend.onrender.com/api/members/${id}`)));
       fetchMembers();
     } catch (error) {
       console.error("Error deleting members:", error);
@@ -101,7 +101,7 @@ const Members = () => {
     setSmsLoading(true);
     setSmsMessage("");
     try {
-      const res = await axios.get("http://localhost:5000/api/members/send-expiry-reminders");
+      const res = await axios.get("https://solsparrow-backend.onrender.com/api/members/send-expiry-reminders");
       setSmsMessage(res.data.message || "SMS sent successfully!");
     } catch (error) {
       setSmsMessage("Failed to send SMS reminders.");

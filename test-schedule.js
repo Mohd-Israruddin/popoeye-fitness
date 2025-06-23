@@ -1,7 +1,7 @@
 // Test script for Schedule functionality
 const axios = require('axios');
 
-const BASE_URL = 'http://localhost:5000/api';
+const BASE_URL = 'https://solsparrow-backend.onrender.com/api';
 
 async function testScheduleFunctionality() {
   console.log('🧪 Testing Schedule Functionality...\n');

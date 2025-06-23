@@ -40,7 +40,7 @@ const Inventory = () => {
 
     const fetchInventory = async () => {
         try {
-            const res = await fetch("http://localhost:5000/api/inventory");
+            const res = await fetch("https://solsparrow-backend.onrender.com/api/inventory");
             const data = await res.json();
             setItems(data);
         } catch (err) {
@@ -51,7 +51,7 @@ const Inventory = () => {
 
     const fetchAnalytics = async () => {
         try {
-            const res = await fetch("http://localhost:5000/api/inventory/analytics");
+            const res = await fetch("https://solsparrow-backend.onrender.com/api/inventory/analytics");
             const data = await res.json();
             setAnalytics(data);
         } catch (err) {
@@ -61,7 +61,7 @@ const Inventory = () => {
 
     const fetchLowStockThreshold = async () => {
         try {
-            const res = await fetch("http://localhost:5000/api/settings/low-stock-threshold");
+            const res = await fetch("https://solsparrow-backend.onrender.com/api/settings/low-stock-threshold");
             const data = await res.json();
             setLowStockThreshold(data.threshold);
         } catch (err) {
@@ -71,7 +71,7 @@ const Inventory = () => {
 
     const fetchOperationalCosts = async () => {
         try {
-            const res = await fetch("http://localhost:5000/api/inventory/operational-costs");
+            const res = await fetch("https://solsparrow-backend.onrender.com/api/inventory/operational-costs");
             const data = await res.json();
             setOperationalCosts(data);
         } catch (err) {
@@ -81,7 +81,7 @@ const Inventory = () => {
 
     const updateLowStockThreshold = async () => {
         try {
-            const res = await fetch("http://localhost:5000/api/settings/low-stock-threshold", {
+            const res = await fetch("https://solsparrow-backend.onrender.com/api/settings/low-stock-threshold", {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ threshold: lowStockThreshold })
@@ -104,7 +104,7 @@ const Inventory = () => {
     const addOperationalCost = async (e) => {
         e.preventDefault();
         try {
-            const res = await fetch("http://localhost:5000/api/inventory/operational-cost", {
+            const res = await fetch("https://solsparrow-backend.onrender.com/api/inventory/operational-cost", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(newOperationalCost)
@@ -128,7 +128,7 @@ const Inventory = () => {
     // Sell item
     const handleSell = async (id) => {
         try {
-            const res = await fetch(`http://localhost:5000/api/inventory/sell/${id}`, {
+            const res = await fetch(`https://solsparrow-backend.onrender.com/api/inventory/sell/${id}`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ payment: "Cash" })

@@ -60,7 +60,7 @@ const RecurringTransactions = () => {
   const fetchTransactions = async () => {
     try {
       setLoading(true);
-      const response = await axios.get("http://localhost:5000/api/recurring");
+      const response = await axios.get("https://solsparrow-backend.onrender.com/api/recurring");
       setTransactions(response.data);
     } catch (error) {
       setMessage("Failed to fetch recurring transactions");
@@ -71,7 +71,7 @@ const RecurringTransactions = () => {
 
   const fetchStaff = async () => {
     try {
-      const response = await axios.get("http://localhost:5000/api/staff");
+      const response = await axios.get("https://solsparrow-backend.onrender.com/api/staff");
       setStaff(response.data);
     } catch (error) {
       console.error("Failed to fetch staff:", error);
@@ -85,10 +85,10 @@ const RecurringTransactions = () => {
       setMessage("");
 
       if (editingId) {
-        await axios.put(`http://localhost:5000/api/recurring/${editingId}`, form);
+        await axios.put(`https://solsparrow-backend.onrender.com/api/recurring/${editingId}`, form);
         setMessage("Recurring transaction updated successfully!");
       } else {
-        await axios.post("http://localhost:5000/api/recurring", form);
+        await axios.post("https://solsparrow-backend.onrender.com/api/recurring", form);
         setMessage("Recurring transaction created successfully!");
       }
 
@@ -124,7 +124,7 @@ const RecurringTransactions = () => {
     }
 
     try {
-      await axios.delete(`http://localhost:5000/api/recurring/${id}`);
+      await axios.delete(`https://solsparrow-backend.onrender.com/api/recurring/${id}`);
       setMessage("Recurring transaction deleted successfully!");
       fetchTransactions();
     } catch (error) {
@@ -135,7 +135,7 @@ const RecurringTransactions = () => {
   const handleToggleActive = async (id, isActive) => {
     try {
       const transaction = transactions.find(t => t.id === id);
-      await axios.put(`http://localhost:5000/api/recurring/${id}`, {
+      await axios.put(`https://solsparrow-backend.onrender.com/api/recurring/${id}`, {
         ...transaction,
         is_active: !isActive
       });
@@ -148,7 +148,7 @@ const RecurringTransactions = () => {
   const handleProcessOne = async (id) => {
     setProcessingId(id);
     try {
-      const res = await axios.post(`http://localhost:5000/api/recurring/process/${id}`);
+      const res = await axios.post(`https://solsparrow-backend.onrender.com/api/recurring/process/${id}`);
       setMessage(res.data.message);
       fetchTransactions();
     } catch (err) {
@@ -161,7 +161,7 @@ const RecurringTransactions = () => {
   const handleProcessNow = async () => {
     try {
       setLoading(true);
-      const response = await axios.post("http://localhost:5000/api/recurring/process-due");
+      const response = await axios.post("https://solsparrow-backend.onrender.com/api/recurring/process-due");
       setMessage(response.data.message);
       fetchTransactions();
     } catch (error) {

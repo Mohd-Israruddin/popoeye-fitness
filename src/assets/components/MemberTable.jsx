@@ -35,7 +35,7 @@ const MemberTable = ({ members, onEdit, onDelete, onOpenBodyMeasurements }) => {
     }
 
     try {
-      const res = await axios.post("http://localhost:5000/api/sms/send", {
+      const res = await axios.post("https://solsparrow-backend.onrender.com/api/sms/send", {
         name: member.name,
         number: member.whatsapp,
         message: `Hi ${member.name}, your membership expires on ${member.expiry_date}. Please renew soon.`,
@@ -49,7 +49,7 @@ const MemberTable = ({ members, onEdit, onDelete, onOpenBodyMeasurements }) => {
 
   const handleSendBulkSMS = async () => {
     try {
-      const res = await axios.get(`http://localhost:5000/api/members/send-remainder/${selected.join(',')}`);
+      const res = await axios.get(`https://solsparrow-backend.onrender.com/api/members/send-remainder/${selected.join(',')}`);
       alert(res.data.message || "✅ Expiry reminders sent.");
     } catch (error) {
       console.error("Bulk SMS error:", error);

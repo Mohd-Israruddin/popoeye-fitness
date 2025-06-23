@@ -84,7 +84,7 @@ const AddFinance = () => {
     };
 
     try {
-      const response = await axios.post("http://localhost:5000/api/finances", financeData);
+      const response = await axios.post("https://solsparrow-backend.onrender.com/api/finances", financeData);
       setMessage("Transaction added successfully!");
       setError(false);
       setRecentTransaction(response.data);
