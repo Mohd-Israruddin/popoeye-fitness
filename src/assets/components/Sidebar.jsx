@@ -12,9 +12,11 @@ const Sidebar = () => {
   const { theme, toggleTheme } = useTheme();
   const [isOpen, setIsOpen] = useState(window.innerWidth > 768);
   const [financesOpen, setFinancesOpen] = useState(false);
+  const [contactOpen, setContactOpen] = useState(false);
 
   const handleToggle = () => setIsOpen(!isOpen);
   const toggleFinances = () => setFinancesOpen(!financesOpen);
+  const toggleContact = () => setContactOpen(!contactOpen);
 
   useEffect(() => {
     const handleResize = () => {
@@ -78,23 +80,29 @@ const Sidebar = () => {
             </div>
           </div>
 
+          {/* Contact Us Dropdown */}
+          <div className="nav-dropdown">
+            <button className="nav-dropdown-btn" onClick={toggleContact}>
+              <FaEnvelope />
+              <span>Contact Us</span>
+              {contactOpen ? <FaChevronDown /> : <FaChevronRight />}
+            </button>
+            <div className={`nav-dropdown-content ${contactOpen ? 'open' : ''}`}> 
+              <a href="https://www.instagram.com/solsparrow.co?igsh=OTR4cjNld3Zvdms4" target="_blank" rel="noopener noreferrer" className="contact-link contact-icon" title="Instagram">
+                <FaInstagram />
+              </a>
+              <a href="mailto:Solsparrowhq@gmail.com" className="contact-link contact-icon" title="Email">
+                <FaEnvelope />
+              </a>
+            </div>
+          </div>
+
           {/* Help Link */}
           <NavLink to="/help" onClick={closeSidebarOnMobile} className="help-link">
             <FaQuestionCircle /> <span>Help & Guide</span>
           </NavLink>
         </nav>
         <div className="sidebar-footer">
-          <div className="contact-info">
-            <h4>Contact Us</h4>
-            <div className="contact-icons">
-              <a href="https://www.instagram.com/solsparrow.co?igsh=OTR4cjNld3Zvdms4" target="_blank" rel="noopener noreferrer" className="contact-link" title="Instagram">
-                <FaInstagram />
-              </a>
-              <a href="mailto:Solsparrowhq@gmail.com" className="contact-link" title="Email">
-                <FaEnvelope />
-              </a>
-            </div>
-          </div>
           <div className="sidebar-controls">
             <button className="theme-toggle" onClick={toggleTheme}>
               {theme === 'dark' ? <FaSun /> : <FaMoon />}

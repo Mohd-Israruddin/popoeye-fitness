@@ -332,3 +332,16 @@
   min-width: 20px;
   color: inherit;
 }
+
+.contact-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  margin: 0 0.5rem;
+  color: #4267B2; /* Example color, adjust as needed */
+  transition: color 0.2s;
+}
+.contact-icon:hover {
+  color: #e1306c; /* Example hover color for Instagram */
+}
