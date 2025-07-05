@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Configure axios to use the backend server
-axios.defaults.baseURL = 'http://localhost:5000/api';
+axios.defaults.baseURL = 'https://solsparrow-backend.onrender.com/api';
 
 // Add request interceptor for debugging
 axios.interceptors.request.use(
