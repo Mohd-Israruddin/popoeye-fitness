@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Responsive, WidthProvider } from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
-import { FaUsers, FaDollarSign, FaUserPlus, FaPlusCircle, FaCalendarAlt, FaClock, FaBoxOpen, FaClipboardList, FaInstagram, FaEnvelope } from 'react-icons/fa';
+import { FaUsers, FaDollarSign, FaUserTie, FaCalendarAlt, FaBoxOpen, FaClipboardList, FaInstagram, FaEnvelope, FaPlusCircle, FaClock } from 'react-icons/fa';
 import CountUp from 'react-countup';
 import { useNavigate } from 'react-router-dom';
 import api from '../service/api';
@@ -19,150 +19,82 @@ import ContactWidget from '../assets/components/widgets/ContactWidget';
 
 const ResponsiveGridLayout = WidthProvider(Responsive);
 
-// --- Widget Components (Stateless Wrappers or Direct Components) ---
+// Mock alerts data
+const mockAlerts = [
+  {
+    type: 'danger',
+    title: 'Low Stock Alert',
+    message: 'Protein powder running low (5 units left)',
+    source: 'Inventory Management System',
+  },
+  {
+    type: 'warning',
+    title: 'Membership Expiring',
+    message: '3 members expiring in next 7 days',
+    source: 'Member Management System',
+  },
+  {
+    type: 'success',
+    title: 'Revenue Milestone',
+    message: 'You crossed ₹40,000 this month!',
+    source: 'Finance System',
+  },
+];
 
-const StatsWidget = ({ stats }) => {
-  console.log('StatsWidget received stats:', stats); // Debug log
-  return (
-    <div className="stats-cards-grid">
-      <div className="stat-card-dash users">
-        <FaUsers className="icon users" />
-        <div className="stat-info">
-          <p>Total Members</p>
-          <span><CountUp end={stats.totalMembers || 0} duration={2} /></span>
-        </div>
-      </div>
-      <div className="stat-card-dash revenue">
-        <FaDollarSign className="icon revenue" />
-        <div className="stat-info">
-          <p>30-Day Revenue</p>
-          <span>₹<CountUp end={stats.monthlyRevenue || 0} duration={2.5} separator="," /></span>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const QuickLinksWidget = () => {
-  const navigate = useNavigate();
-  const links = [
-    { name: 'Add Member', icon: <FaUserPlus />, path: '/members' },
-    { name: 'Add Finance', icon: <FaPlusCircle />, path: '/finances/add' },
-    { name: 'Full Schedule', icon: <FaCalendarAlt />, path: '/schedule' },
-    { name: 'Inventory', icon: <FaBoxOpen />, path: '/inventory' },
-    { name: 'Enquiries', icon: <FaClipboardList />, path: '/enquiries' },
-  ];
-  return (
-    <div className="widget-content">
-      <div className="quick-links-grid">
-        {links.map(link => (
-          <button key={link.name} onClick={() => navigate(link.path)} className="quick-link-btn">
-            {link.icon}
-            <span>{link.name}</span>
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-};
-
-const ScheduleWidget = ({ schedule }) => {
-    const formatTime = (timeString) => new Date(timeString).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
-    return (
-      <div className="widget-content">
-        <div className="schedule-list">
-          {schedule.length > 0 ? (
-            schedule.map((item, index) => (
-              <div key={index} className="schedule-item">
-                <div className="schedule-time">
-                  <FaClock /> {formatTime(item.start_time)} - {formatTime(item.end_time)}
-                </div>
-                <div className="schedule-details">
-                  <p className="class-name">{item.class_name}</p>
-                  <p className="instructor">{item.instructor}</p>
-                </div>
-              </div>
-            ))
-          ) : (
-            <div className="empty-message">No classes scheduled for today.</div>
-          )}
-        </div>
-      </div>
-    );
-  };
-  
-  const RecentMembersWidget = ({ recentMembers }) => {
-    console.log('RecentMembersWidget received:', recentMembers); // Debug log
-    const formatDate = (dateString) => new Date(dateString).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-    
-    if (!recentMembers || recentMembers.length === 0) {
-      return (
-        <div className="widget-content">
-          <div className="empty-message">No recent members to display.</div>
-        </div>
-      );
-    }
-
-    return (
-      <div className="widget-content">
-        <div className="members-list">
-          {recentMembers.map((member, index) => (
-            <div key={index} className="member-item">
-              <p className="member-name">{member.name}</p>
-              <p className="join-date">Joined: {formatDate(member.join_date)}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  };
-
-// --- Main Dashboard Component ---
+function formatTime(timeString) {
+  const date = new Date(timeString);
+  return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+}
 
 const Home = () => {
-  const [stats, setStats] = useState({ totalMembers: 0, monthlyRevenue: 0 });
+  const [stats, setStats] = useState({
+    totalMembers: 0,
+    prevMonthMembers: 0,
+    monthlyRevenue: 0,
+    prevMonthRevenue: 0,
+    activeStaff: 0,
+    todaysClasses: 0,
+    prevMonthClasses: 0,
+    membersIncrease: 0,
+    revenueIncrease: 0,
+    classesIncrease: 0,
+  });
   const [schedule, setSchedule] = useState([]);
-  const [recentMembers, setRecentMembers] = useState([]);
+  const [alerts, setAlerts] = useState(mockAlerts);
+  const [loading, setLoading] = useState(true);
   const [layouts, setLayouts] = useState({ lg: [] });
   const [widgets, setWidgets] = useState([]);
   const [backendAvailable, setBackendAvailable] = useState(true);
   const [isInitialized, setIsInitialized] = useState(false);
+  const navigate = useNavigate();
 
-  // Create widget components with current data - memoized to prevent unnecessary re-renders
+  // Create widget components for additional dashboard widgets
   const availableWidgets = React.useMemo(() => [
-    { id: 'stats', name: 'Key Stats', component: <StatsWidget stats={stats} />, defaultLayout: { w: 2, h: 1, x: 0, y: 0, minW: 2, minH: 1 } },
-    { id: 'quickLinks', name: 'Quick Links', component: <QuickLinksWidget />, defaultLayout: { w: 2, h: 1, x: 0, y: 1, minW: 2, minH: 1 } },
-    { id: 'alerts', name: 'Alerts', component: <AlertsWidget />, defaultLayout: { w: 1, h: 2, x: 0, y: 2, minW: 1, minH: 2 } },
-    { id: 'profitLoss', name: 'Profit & Loss (6 Months)', component: <ProfitLossWidget />, defaultLayout: { w: 1, h: 2, x: 1, y: 2, minW: 1, minH: 2 } },
-    { id: 'schedule', name: "Today's Schedule", component: <ScheduleWidget schedule={schedule} />, defaultLayout: { w: 1, h: 2, x: 0, y: 4, minW: 1, minH: 2 } },
-    { id: 'recentMembers', name: 'Recent Members', component: <RecentMembersWidget recentMembers={recentMembers} />, defaultLayout: { w: 1, h: 2, x: 1, y: 4, minW: 1, minH: 2 } },
-    { id: 'expiringMembers', name: 'Members Expiring Soon', component: <ExpiringMembersWidget />, defaultLayout: { w: 1, h: 2, x: 0, y: 6, minW: 1, minH: 2 } },
-    { id: 'finances', name: 'Recent Finances', component: <FinancesWidget />, defaultLayout: { w: 1, h: 2, x: 1, y: 6, minW: 1, minH: 2 } },
-    { id: 'staff', name: 'Staff Overview', component: <StaffWidget />, defaultLayout: { w: 1, h: 2, x: 0, y: 8, minW: 1, minH: 2 } },
-    { id: 'notes', name: 'Notes', component: <NotesWidget />, defaultLayout: { w: 1, h: 2, x: 1, y: 8, minW: 1, minH: 2 } },
-    { id: 'enquiries', name: 'Recent Enquiries', component: <EnquiriesWidget />, defaultLayout: { w: 1, h: 2, x: 0, y: 10, minW: 1, minH: 2 } },
-    { id: 'contact', name: 'Contact', component: <ContactWidget />, defaultLayout: { w: 1, h: 2, x: 0, y: 12, minW: 1, minH: 2 } },
-  ], [stats, schedule, recentMembers]);
-  
+    { id: 'alerts', name: 'Alerts', component: <AlertsWidget />, defaultLayout: { w: 1, h: 2, x: 0, y: 0, minW: 1, minH: 2 } },
+    { id: 'expiringMembers', name: 'Members Expiring Soon', component: <ExpiringMembersWidget />, defaultLayout: { w: 1, h: 2, x: 0, y: 2, minW: 1, minH: 2 } },
+    { id: 'staff', name: 'Staff Overview', component: <StaffWidget />, defaultLayout: { w: 1, h: 2, x: 0, y: 4, minW: 1, minH: 2 } },
+    { id: 'notes', name: 'Notes', component: <NotesWidget />, defaultLayout: { w: 1, h: 2, x: 1, y: 4, minW: 1, minH: 2 } },
+    { id: 'enquiries', name: 'Recent Enquiries', component: <EnquiriesWidget />, defaultLayout: { w: 1, h: 2, x: 0, y: 6, minW: 1, minH: 2 } },
+    { id: 'contact', name: 'Contact', component: <ContactWidget />, defaultLayout: { w: 1, h: 2, x: 1, y: 6, minW: 1, minH: 2 } },
+  ], []);
+
+  // Fetch dashboard data
   const fetchDashboardData = useCallback(async () => {
-    if (isInitialized) return; // Prevent multiple fetches
+    if (isInitialized) return;
     
     try {
-      console.log('Fetching dashboard data...'); // Debug log
-      const [statsRes, scheduleRes, membersRes, layoutRes] = await Promise.all([
+      console.log('Fetching dashboard data...');
+      const [statsRes, scheduleRes, layoutRes] = await Promise.all([
         api.get('/insights/key-stats'),
         api.get('/insights/todays-schedule'),
-        api.get('/insights/recent-members'),
         api.get('/settings/dashboard-layout'),
       ]);
       
-      console.log('Stats response:', statsRes.data); // Debug log
-      console.log('Schedule response:', scheduleRes.data); // Debug log
-      console.log('Members response:', membersRes.data); // Debug log
+      console.log('Stats response:', statsRes.data);
+      console.log('Schedule response:', scheduleRes.data);
       
       setStats(statsRes.data);
       setSchedule(scheduleRes.data);
-      setRecentMembers(membersRes.data);
       setBackendAvailable(true);
       
       let savedLayouts;
@@ -183,37 +115,45 @@ const Home = () => {
           .filter(Boolean);
         setWidgets(activeWidgets);
       } else {
-        const defaultWidgets = availableWidgets.filter(w => ['stats', 'quickLinks', 'alerts', 'profitLoss', 'schedule', 'recentMembers', 'enquiries', 'contact'].includes(w.id));
+        const defaultWidgets = availableWidgets.filter(w => ['alerts', 'expiringMembers', 'staff', 'notes', 'enquiries', 'contact'].includes(w.id));
         setWidgets(defaultWidgets);
         const defaultLayouts = { lg: defaultWidgets.map(w => ({ ...w.defaultLayout, i: w.id })) };
         setLayouts(defaultLayouts);
       }
       setIsInitialized(true);
+      setLoading(false);
     } catch (error) {
       console.error("Failed to fetch dashboard data:", error);
       setBackendAvailable(false);
       
-      // Fallback mock data when backend is not available
-      const mockStats = { totalMembers: 25, monthlyRevenue: 45000, monthlyExpense: 32000 };
+      // Fallback mock data
+      const mockStats = {
+        totalMembers: 25,
+        prevMonthMembers: 20,
+        monthlyRevenue: 45000,
+        prevMonthRevenue: 38000,
+        activeStaff: 8,
+        todaysClasses: 3,
+        prevMonthClasses: 2,
+        membersIncrease: 25,
+        revenueIncrease: 18,
+        classesIncrease: 50,
+      };
       const mockSchedule = [
-        { class_name: 'Yoga', start_time: '09:00:00', instructor: 'Sarah', member_name: 'John' },
-        { class_name: 'Cardio', start_time: '10:30:00', instructor: 'Mike', member_name: 'Emma' }
-      ];
-      const mockMembers = [
-        { name: 'John Doe', join_date: '2025-06-15' },
-        { name: 'Jane Smith', join_date: '2025-06-10' },
-        { name: 'Bob Johnson', join_date: '2025-06-05' }
+        { class_name: 'Morning Yoga', instructor: 'Sarah Johnson', start_time: '2024-01-15T06:00:00', end_time: '2024-01-15T07:00:00', slots: '12/15' },
+        { class_name: 'HIIT Training', instructor: 'Mike Wilson', start_time: '2024-01-15T08:00:00', end_time: '2024-01-15T09:00:00', slots: '8/10' },
+        { class_name: 'Zumba Dance', instructor: 'Lisa Garcia', start_time: '2024-01-15T10:00:00', end_time: '2024-01-15T11:00:00', slots: '20/25' },
       ];
       
       setStats(mockStats);
       setSchedule(mockSchedule);
-      setRecentMembers(mockMembers);
       
-      const defaultWidgets = availableWidgets.filter(w => ['stats', 'quickLinks', 'alerts', 'profitLoss', 'schedule', 'recentMembers', 'enquiries', 'contact'].includes(w.id));
+      const defaultWidgets = availableWidgets.filter(w => ['alerts', 'expiringMembers', 'staff', 'notes', 'enquiries', 'contact'].includes(w.id));
       setWidgets(defaultWidgets);
       const defaultLayouts = { lg: defaultWidgets.map(w => ({ ...w.defaultLayout, i: w.id })) };
       setLayouts(defaultLayouts);
       setIsInitialized(true);
+      setLoading(false);
     }
   }, [availableWidgets, isInitialized]);
 
@@ -221,21 +161,9 @@ const Home = () => {
     fetchDashboardData();
   }, [fetchDashboardData]);
 
-  // Update widget components when data changes
-  useEffect(() => {
-    if (isInitialized && widgets.length > 0) {
-      const updatedWidgets = widgets.map(widget => {
-        const updatedWidget = availableWidgets.find(w => w.id === widget.id);
-        return updatedWidget || widget;
-      });
-      setWidgets(updatedWidgets);
-    }
-  }, [availableWidgets, isInitialized, widgets.length]);
-
   const onLayoutChange = useCallback(async (layout, allLayouts) => {
     if (!allLayouts.lg || allLayouts.lg.length === 0) return;
     
-    // Quick check to prevent saving identical layouts
     if(JSON.stringify(allLayouts) === JSON.stringify(layouts)) return;
 
     setLayouts(allLayouts);
@@ -252,7 +180,7 @@ const Home = () => {
       const newWidgets = [...widgets, widgetToAdd];
       setWidgets(newWidgets);
       
-      const newLayoutItem = { ...widgetToAdd.defaultLayout, i: widgetId, x: (widgets.length * 2) % (layouts.lg ? layouts.lg.length : 2) , y: Infinity }; // place at bottom
+      const newLayoutItem = { ...widgetToAdd.defaultLayout, i: widgetId, x: (widgets.length * 2) % (layouts.lg ? layouts.lg.length : 2) , y: Infinity };
       const newLayouts = { lg: [...layouts.lg, newLayoutItem] };
       setLayouts(newLayouts);
       onLayoutChange(newLayouts.lg, newLayouts);
@@ -260,19 +188,64 @@ const Home = () => {
   }, [availableWidgets, widgets, layouts, onLayoutChange]);
 
   const removeWidget = useCallback((widgetId) => {
-    console.log('Removing widget:', widgetId); // Debug log
-    setWidgets(prevWidgets => {
-      const newWidgets = prevWidgets.filter(w => w.id !== widgetId);
-      console.log('New widgets:', newWidgets.map(w => w.id)); // Debug log
-      return newWidgets;
-    });
+    setWidgets(prevWidgets => prevWidgets.filter(w => w.id !== widgetId));
     setLayouts(prevLayouts => {
       const newLayouts = { lg: prevLayouts.lg.filter(l => l.i !== widgetId) };
-      console.log('New layouts:', newLayouts.lg.map(l => l.i)); // Debug log
       onLayoutChange(newLayouts.lg, newLayouts);
       return newLayouts;
     });
   }, [onLayoutChange]);
+
+  // Summary cards config
+  const summaryCards = [
+    {
+      label: 'Total Members',
+      icon: <FaUsers />,
+      key: 'totalMembers',
+      color: 'users',
+      sub: `${stats.membersIncrease >= 0 ? '+' : ''}${stats.membersIncrease}% from last month`,
+      subColor: '#28B295',
+      onClick: () => navigate('/members'),
+    },
+    {
+      label: 'Active Staff',
+      icon: <FaUserTie />,
+      key: 'activeStaff',
+      color: 'staff',
+      sub: '2 new this week',
+      subColor: '#28B295',
+      onClick: () => navigate('/staff'),
+    },
+    {
+      label: "Today's Classes",
+      icon: <FaCalendarAlt />,
+      key: 'todaysClasses',
+      color: 'classes',
+      sub: `${stats.classesIncrease >= 0 ? '+' : ''}${stats.classesIncrease}% from last month`,
+      subColor: '#28B295',
+      onClick: () => navigate('/schedule'),
+    },
+  ];
+
+  // Quick actions
+  const quickActions = [
+    { label: 'Add Member', icon: <FaUsers />, path: '/members' },
+    { label: 'Add Finance', icon: <FaPlusCircle />, path: '/finances/add' },
+    { label: 'Full Schedule', icon: <FaCalendarAlt />, path: '/schedule' },
+    { label: 'Inventory', icon: <FaBoxOpen />, path: '/inventory' },
+    { label: 'Enquiries', icon: <FaClipboardList />, path: '/enquiries' },
+  ];
+
+  // Alerts box click handlers
+  const handleAlertClick = (alert) => {
+    if (alert.type === 'danger') {
+      navigate('/inventory');
+    } else if (alert.type === 'warning') {
+      navigate('/members');
+    } else if (alert.type === 'success') {
+      navigate('/finances/view');
+    }
+  };
 
   return (
     <div className="home-container">
@@ -283,42 +256,83 @@ const Home = () => {
         </div>
       )}
       
+      {/* Header */}
       <div className="home-header">
         <div className="header-content">
           <div>
-            <h1>Dashboard</h1>
-            <p>Welcome back! Your gym's mission control. Customize your view below.</p>
+            <h1 className="dashboard-title">Dashboard</h1>
+            <p className="dashboard-subtitle">
+              Welcome back! Your gym's mission control. Customize your view below.
+            </p>
           </div>
           <div className="contact-info-header">
-            <a 
-              href="https://www.instagram.com/solsparrow.co?igsh=OTR4cjNld3Zvdms4" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="contact-link-header"
-              title="Instagram"
-            >
-              <FaInstagram />
-            </a>
-            <a 
-              href="mailto:Solsparrowhq@gmail.com" 
+            <a
+              href="mailto:Solsparrowhq@gmail.com"
               className="contact-link-header"
               title="Email"
             >
               <FaEnvelope />
             </a>
+            <a
+              href="https://www.instagram.com/solsparrow.co?igsh=OTR4cjNld3Zvdms4"
+              className="contact-link-header"
+              title="Instagram"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <FaInstagram />
+            </a>
           </div>
         </div>
       </div>
-      
-      {!isInitialized ? (
-        <div className="loading-state">
-          <div className="loading-spinner"></div>
-          <p>Loading dashboard...</p>
+
+      {/* Summary Cards */}
+      <div className="summary-cards">
+        {summaryCards.map(card => (
+          <div
+            className={`home-stat-card ${card.color}`}
+            key={card.key}
+            onClick={card.onClick}
+          >
+            <div className="stat-card-icon">
+              {card.icon}
+            </div>
+            <div className="stat-info">
+              <p className="stat-label">{card.label}</p>
+              <span className="stat-value">
+                {card.prefix || ''}
+                {loading ? <span className="loading-text">...</span> : <CountUp end={stats[card.key] || 0} duration={1.2} separator="," />}
+              </span>
+              <div className="stat-sub" style={{ color: card.subColor }}>{card.sub}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Quick Actions - single row */}
+      <div className="quick-actions-container">
+        <div className="quick-actions-title">
+          Quick Actions
         </div>
-      ) : (
+        <div className="dashboard-quick-actions">
+          {quickActions.map(action => (
+            <button
+              key={action.label}
+              className="dashboard-quick-link-btn"
+              onClick={() => navigate(action.path)}
+            >
+              <span className="quick-action-icon">{action.icon}</span>
+              <span>{action.label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Draggable Widgets Grid Only */}
+      {isInitialized && (
         <>
           <div className="widget-controls">
-            <p>Add a widget:</p>
+            <p>Add additional widgets:</p>
             {availableWidgets.map(w => (
               !widgets.find(active => active.id === w.id) &&
               <button key={w.id} onClick={() => addWidget(w.id)}>{w.name}</button>
@@ -345,7 +359,6 @@ const Home = () => {
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
-                      console.log('Remove button clicked for:', widget.id);
                       removeWidget(widget.id);
                     }} 
                     className="remove-widget-btn"

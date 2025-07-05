@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import "./MemberForm.css";
 
 const generateMemberId = () => `M${Date.now()}`;
 
@@ -67,12 +68,12 @@ const MemberForm = ({ member, onSave, onClose }) => {
   };
 
   return (
-    <div className="modal-overlay">
-      <form className="modal" onSubmit={handleSubmit}>
-        <h3>{member ? "Edit Member" : "Add Member"}</h3>
+    <div className="members-form-overlay">
+      <form className="members-form-modal" onSubmit={handleSubmit}>
+        <h3 className="members-form-title">{member ? "Edit Member" : "Add Member"}</h3>
 
-        <div className="form-grid">
-          <div className="form-group span-2">
+        <div className="members-form-grid">
+          <div className="members-form-group members-form-span-2">
             <label htmlFor="member_id">Member ID</label>
             <input
               id="member_id"
@@ -82,10 +83,11 @@ const MemberForm = ({ member, onSave, onClose }) => {
               placeholder="Auto-generated ID"
               type="text"
               readOnly
+              className="members-form-input"
             />
           </div>
 
-          <div className="form-group span-2">
+          <div className="members-form-group members-form-span-2">
             <label htmlFor="name">Full Name</label>
             <input
               id="name"
@@ -95,10 +97,11 @@ const MemberForm = ({ member, onSave, onClose }) => {
               placeholder="Full name of the member"
               type="text"
               required
+              className="members-form-input"
             />
           </div>
 
-          <div className="form-group span-2">
+          <div className="members-form-group members-form-span-2">
             <label htmlFor="whatsapp">WhatsApp Number</label>
             <input
               id="whatsapp"
@@ -110,10 +113,11 @@ const MemberForm = ({ member, onSave, onClose }) => {
               title="Enter a valid 10-digit number"
               type="text"
               required
+              className="members-form-input"
             />
           </div>
 
-          <div className="form-group span-2">
+          <div className="members-form-group members-form-span-2">
             <label htmlFor="package">Membership Package</label>
             <select
               id="package"
@@ -121,7 +125,7 @@ const MemberForm = ({ member, onSave, onClose }) => {
               value={data.package}
               onChange={handleChange}
               required
-              className="package-select"
+              className="members-form-select"
             >
               <option value="">Select package duration</option>
               <option value="1 month">1 Month</option>
@@ -132,7 +136,7 @@ const MemberForm = ({ member, onSave, onClose }) => {
             </select>
           </div>
 
-          <div className="form-group">
+          <div className="members-form-group">
             <label htmlFor="join_date">Join Date</label>
             <input
               id="join_date"
@@ -141,10 +145,11 @@ const MemberForm = ({ member, onSave, onClose }) => {
               onChange={handleChange}
               type="date"
               required
+              className="members-form-input"
             />
           </div>
 
-          <div className="form-group">
+          <div className="members-form-group">
             <label htmlFor="expiry_date">Expiry Date</label>
             <input
               id="expiry_date"
@@ -154,10 +159,11 @@ const MemberForm = ({ member, onSave, onClose }) => {
               type="date"
               required
               readOnly={data.package !== 'custom' && data.package !== ''}
+              className="members-form-input"
             />
           </div>
 
-          <div className="form-group span-2">
+          <div className="members-form-group members-form-span-2">
             <label htmlFor="address">Address</label>
             <input
               id="address"
@@ -166,10 +172,11 @@ const MemberForm = ({ member, onSave, onClose }) => {
               onChange={handleChange}
               placeholder="Address"
               type="text"
+              className="members-form-input"
             />
           </div>
 
-          <div className="form-group span-2">
+          <div className="members-form-group members-form-span-2">
             <label htmlFor="health_issues">Health Issues</label>
             <input
               id="health_issues"
@@ -178,10 +185,11 @@ const MemberForm = ({ member, onSave, onClose }) => {
               onChange={handleChange}
               placeholder="Health issues (if any)"
               type="text"
+              className="members-form-input"
             />
           </div>
 
-          <div className="form-group span-2">
+          <div className="members-form-group members-form-span-2">
             <label htmlFor="blood_group">Blood Group</label>
             <input
               id="blood_group"
@@ -190,68 +198,60 @@ const MemberForm = ({ member, onSave, onClose }) => {
               onChange={handleChange}
               placeholder="e.g., A+, O-"
               type="text"
+              className="members-form-input"
             />
           </div>
 
-          <div className="form-group span-2">
+          <div className="members-form-group members-form-span-2">
             <label htmlFor="extra_details">Extra Details</label>
             <input
               id="extra_details"
               name="extra_details"
               value={data.extra_details || ''}
               onChange={handleChange}
-              placeholder="Extra details"
+              placeholder="Any additional details"
               type="text"
+              className="members-form-input"
+            />
+          </div>
+
+          <div className="members-form-group">
+            <label htmlFor="total_amount">Total Amount</label>
+            <input
+              id="total_amount"
+              name="total_amount"
+              value={data.total_amount}
+              onChange={handleChange}
+              placeholder="Total package amount"
+              type="number"
+              min="0"
+              step="0.01"
+              className="members-form-input"
+            />
+          </div>
+
+          <div className="members-form-group">
+            <label htmlFor="paid_amount">Paid Amount</label>
+            <input
+              id="paid_amount"
+              name="paid_amount"
+              value={data.paid_amount}
+              onChange={handleChange}
+              placeholder="Amount already paid"
+              type="number"
+              min="0"
+              step="0.01"
+              className="members-form-input"
             />
           </div>
         </div>
 
-        <div className="payment-details-group">
-          <div className="payment-details-title">Payment Details</div>
-          <div className="payment-details-grid">
-            <div className="form-group">
-              <label htmlFor="total_amount">Total Amount</label>
-              <input
-                id="total_amount"
-                name="total_amount"
-                value={data.total_amount}
-                onChange={handleChange}
-                placeholder="Total amount"
-                type="number"
-                min="0"
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="paid_amount">Amount Paid</label>
-              <input
-                id="paid_amount"
-                name="paid_amount"
-                value={data.paid_amount}
-                onChange={handleChange}
-                placeholder="Amount paid"
-                type="number"
-                min="0"
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="pending_amount">Amount Due</label>
-              <input
-                id="pending_amount"
-                name="pending_amount"
-                value={(data.total_amount - data.paid_amount) > 0 ? (data.total_amount - data.paid_amount) : 'None'}
-                type="text"
-                readOnly
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="modal-buttons">
-          <button type="submit">💾 Save</button>
-          <button type="button" onClick={onClose}>
-            ❌ Cancel
+        <div className="members-form-buttons">
+          <button type="submit" className="members-form-btn members-form-btn-primary">
+            {member ? "Update Member" : "Add Member"}
+          </button>
+          <button type="button" onClick={onClose} className="members-form-btn members-form-btn-secondary">
+            Cancel
           </button>
         </div>
       </form>

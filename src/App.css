@@ -8,7 +8,7 @@
 .app-container {
   display: flex;
   height: 100vh;
-  background-color: var(--background-primary);
+  background: #1C1C1E;
 }
 
 .main-content {
@@ -16,6 +16,7 @@
   padding: 2rem;
   overflow-y: auto;
   transition: margin-left 0.3s ease-in-out;
+  background: #1C1C1E;
 }
 
 @media (min-width: 769px) {

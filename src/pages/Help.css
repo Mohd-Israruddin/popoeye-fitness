@@ -1,6 +1,7 @@
+/* Modernized Help & Guide Styles */
 .help-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #1C1C1E 0%, #2A2A2C 100%);
+  background: #1C1C1E;
   color: #E3E3E0;
   padding: 2rem;
 }
@@ -9,15 +10,15 @@
   text-align: center;
   margin-bottom: 3rem;
   padding: 2rem;
-  background: linear-gradient(135deg, #28B295 0%, #2A9D8A 100%);
+  background: #23272f;
   border-radius: 20px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 2px 12px #0004;
 }
 
 .help-header h1 {
   font-size: 2.5rem;
   font-weight: 800;
-  color: #1C1C1E;
+  color: #28B295;
   margin: 0 0 1rem 0;
   display: flex;
   align-items: center;
@@ -27,8 +28,8 @@
 
 .help-header p {
   font-size: 1.2rem;
-  color: #1C1C1E;
-  opacity: 0.9;
+  color: #b0b3b8;
+  opacity: 1;
   margin: 0;
 }
 
@@ -41,11 +42,11 @@
 }
 
 .help-sidebar {
-  background: linear-gradient(145deg, #2A2A2C 0%, #1C1C1E 100%);
+  background: #23272f;
   border-radius: 16px;
   padding: 1.5rem;
   border: 2px solid #28B295;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 2px 12px #0004;
   height: fit-content;
   position: sticky;
   top: 2rem;
@@ -58,13 +59,13 @@
 }
 
 .help-nav-item {
-  background: linear-gradient(135deg, #2A2A2C 0%, #1C1C1E 100%);
+  background: #23272f;
   border: 2px solid #28B295;
   border-radius: 12px;
   padding: 1rem 1.25rem;
   color: #E3E3E0;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.18s;
   display: flex;
   align-items: center;
   gap: 1rem;
@@ -74,17 +75,17 @@
 }
 
 .help-nav-item:hover {
-  background: linear-gradient(135deg, #28B295 0%, #2A9D8A 100%);
-  color: #1C1C1E;
+  background: #28B295;
+  color: #23272f;
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(40, 178, 149, 0.3);
+  box-shadow: 0 4px 12px rgba(40, 178, 149, 0.2);
 }
 
 .help-nav-item.active {
-  background: linear-gradient(135deg, #D6F84C 0%, #C4E83C 100%);
-  color: #1C1C1E;
-  border-color: #D6F84C;
-  box-shadow: 0 6px 20px rgba(214, 248, 76, 0.3);
+  background: #28B295;
+  color: #23272f;
+  border-color: #28B295;
+  box-shadow: 0 4px 12px rgba(40, 178, 149, 0.2);
 }
 
 .nav-icon {
@@ -109,11 +110,11 @@
 }
 
 .help-main {
-  background: linear-gradient(145deg, #2A2A2C 0%, #1C1C1E 100%);
+  background: #23272f;
   border-radius: 16px;
   padding: 2rem;
   border: 2px solid #28B295;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 2px 12px #0004;
 }
 
 .help-content-wrapper {
@@ -123,7 +124,7 @@
 .help-content h3 {
   font-size: 2rem;
   font-weight: 800;
-  color: #D6F84C;
+  color: #28B295;
   margin: 0 0 1.5rem 0;
   border-bottom: 3px solid #28B295;
   padding-bottom: 0.5rem;
@@ -141,14 +142,15 @@
   gap: 1.5rem;
   margin-bottom: 2rem;
   padding: 1.5rem;
-  background: linear-gradient(135deg, rgba(40, 178, 149, 0.1) 0%, rgba(28, 28, 30, 0.8) 100%);
+  background: #23272f;
   border-radius: 12px;
-  border: 1px solid #28B295;
+  border: 1.5px solid #28B295;
+  box-shadow: 0 2px 12px #0004;
 }
 
 .step-number {
-  background: linear-gradient(135deg, #28B295, #2A9D8A);
-  color: #1C1C1E;
+  background: #28B295;
+  color: #23272f;
   width: 40px;
   height: 40px;
   border-radius: 50%;
@@ -161,7 +163,7 @@
 }
 
 .step-content h4 {
-  color: #D6F84C;
+  color: #28B295;
   font-size: 1.3rem;
   font-weight: 700;
   margin: 0 0 1rem 0;
@@ -178,16 +180,16 @@
 }
 
 .feature-card {
-  background: linear-gradient(135deg, #2A2A2C 0%, #1C1C1E 100%);
+  background: #23272f;
   border: 2px solid #28B295;
   border-radius: 12px;
   padding: 1.5rem;
   margin-bottom: 1.5rem;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 12px #0004;
 }
 
 .feature-card h4 {
-  color: #D6F84C;
+  color: #28B295;
   font-size: 1.2rem;
   font-weight: 700;
   margin: 0 0 1rem 0;
@@ -214,14 +216,15 @@
 }
 
 .tip-box {
-  background: linear-gradient(135deg, rgba(214, 248, 76, 0.1) 0%, rgba(28, 28, 30, 0.8) 100%);
-  border: 2px solid #D6F84C;
+  background: #23272f;
+  border: 2px solid #28B295;
   border-radius: 12px;
   padding: 1.5rem;
   margin: 1.5rem 0;
   display: flex;
   gap: 1rem;
   align-items: flex-start;
+  box-shadow: 0 2px 12px #0004;
 }
 
 .tip-box svg {
@@ -247,10 +250,6 @@
 
 .tip-box ul {
   padding-left: 1.5rem;
-}
-
-.tip-box li {
-  margin-bottom: 0.5rem;
 }
 
 .trouble-card {
@@ -309,24 +308,25 @@
 @media (max-width: 1024px) {
   .help-container {
     grid-template-columns: 1fr;
-    gap: 1.5rem;
+    gap: 2rem;
   }
 
   .help-sidebar {
     position: static;
-    order: 2;
+    top: unset;
+    margin-bottom: 2rem;
   }
 
   .help-nav {
     flex-direction: row;
+    gap: 1rem;
     flex-wrap: wrap;
-    gap: 0.5rem;
   }
 
   .help-nav-item {
-    flex: 1;
-    min-width: 200px;
-    justify-content: center;
+    flex: 1 1 200px;
+    min-width: 180px;
+    text-align: center;
   }
 }
 
@@ -336,7 +336,7 @@
   }
 
   .help-header {
-    padding: 1.5rem;
+    padding: 1.2rem;
     margin-bottom: 2rem;
   }
 
@@ -345,34 +345,40 @@
   }
 
   .help-main {
-    padding: 1.5rem;
+    padding: 1rem;
   }
 
   .help-step {
     flex-direction: column;
-    text-align: center;
+    gap: 1rem;
+    padding: 1rem;
   }
 
   .step-number {
-    align-self: center;
+    margin-bottom: 0.5rem;
   }
 
   .tip-box {
     flex-direction: column;
-    text-align: center;
+    gap: 0.5rem;
+    padding: 1rem;
   }
 
   .help-nav-item {
-    min-width: 150px;
+    padding: 0.7rem 0.8rem;
+    font-size: 0.95rem;
   }
 }
 
 @media (max-width: 480px) {
   .help-nav {
     flex-direction: column;
+    gap: 0.5rem;
   }
 
   .help-nav-item {
-    min-width: auto;
+    min-width: unset;
+    font-size: 0.92rem;
+    padding: 0.6rem 0.5rem;
   }
 } 

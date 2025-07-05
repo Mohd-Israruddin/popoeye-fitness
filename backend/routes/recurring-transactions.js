@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const db = require("../db");
+const bcrypt = require("bcryptjs");
 
 // GET all recurring transactions
 router.get("/", async (req, res) => {
@@ -67,6 +68,9 @@ router.post("/", async (req, res) => {
 
 // PUT update recurring transaction
 router.put("/:id", async (req, res) => {
+  console.log('PUT /recurring/:id - Request body:', req.body);
+  console.log('PUT /recurring/:id - Params:', req.params);
+  
   const { id } = req.params;
   const {
     name,
@@ -91,23 +95,41 @@ router.put("/:id", async (req, res) => {
     
     // Handle empty end_date and staff_id by converting to NULL
     const processedStaffId = staff_id && staff_id !== '' ? staff_id : null;
+    const processedIsActive = is_active === true || is_active === 1 || is_active === 'true' ? 1 : 0;
     
     await db.execute(`
       UPDATE recurring_transactions 
       SET name=?, type=?, amount=?, category=?, payment=?, description=?, 
           frequency=?, start_date=?, end_date=?, is_active=?, next_due_date=?, staff_id=?, updated_at=NOW()
       WHERE id=?
-    `, [name, type, amount, category, payment, description, frequency, formattedStartDate, formattedEndDate, is_active, nextDueDate, processedStaffId, id]);
+    `, [name, type, amount, category, payment, description, frequency, formattedStartDate, formattedEndDate, processedIsActive, nextDueDate, processedStaffId, id]);
+
+    // If this is a staff salary transaction, update the staff's salary as well
+    if (processedStaffId && amount !== undefined) {
+      await db.execute(
+        'UPDATE staff SET salary = ? WHERE id = ?',
+        [amount, processedStaffId]
+      );
+    }
 
     res.json({ message: "Recurring transaction updated successfully." });
   } catch (error) {
     console.error("Error updating recurring transaction:", error);
+    console.error("Error details:", error.message);
     res.status(500).json({ error: "Failed to update recurring transaction." });
   }
 });
 
 // DELETE recurring transaction
 router.delete("/:id", async (req, res) => {
+  const { admin_code } = req.body;
+  if (!admin_code) {
+    return res.status(403).json({ message: 'Admin code required.' });
+  }
+  const valid = await verifyAdminCode(admin_code);
+  if (!valid) {
+    return res.status(403).json({ message: 'Invalid admin code.' });
+  }
   const { id } = req.params;
 
   try {
@@ -232,6 +254,12 @@ router.post("/process/:id", async (req, res) => {
          VALUES (?, ?, ?, ?, ?, ?)`,
         [transaction.staff_id, transaction.amount, today, transaction.payment, financeResult.insertId, recurringDescription]
       );
+      
+      // Update staff salary status to 'Paid'
+      await db.execute(
+        "UPDATE staff SET salary_status = 'Paid' WHERE id = ?",
+        [transaction.staff_id]
+      );
     }
     // Update next due date
     const nextDueDate = calculateNextDueDate(today, transaction.frequency);
@@ -268,6 +296,25 @@ function calculateNextDueDate(currentDate, frequency) {
   }
   
   return date.toISOString().split('T')[0];
+}
+
+// Helper to verify admin/staff code
+async function verifyAdminCode(code) {
+  // Check for admin_code first
+  const [adminRows] = await db.query('SELECT * FROM admin_settings WHERE admin_code = ?', [code]);
+  
+  if (adminRows.length > 0) {
+    return true;
+  }
+  
+  // Check for staff_code if admin_code not found
+  const [staffRows] = await db.query('SELECT * FROM staff WHERE staff_code = ?', [code]);
+  
+  if (staffRows.length > 0) {
+    return true;
+  }
+  
+  return false;
 }
 
 module.exports = router; 

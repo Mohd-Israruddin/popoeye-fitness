@@ -22,6 +22,8 @@ const settingsRoutes = require('./routes/settings');
 const recurringRoutes = require('./routes/recurring-transactions');
 const enquiryRoutes = require('./routes/enquiries');
 const insightsRoutes = require('./routes/insights');
+const adminRoutes = require('./routes/admin');
+const loginRoutes = require('./routes/login');
 
 // ✅ Use routes
 app.use("/api/members", memberRoutes);
@@ -33,6 +35,8 @@ app.use('/api/settings', settingsRoutes);
 app.use('/api/recurring', recurringRoutes);
 app.use('/api/enquiries', enquiryRoutes);
 app.use('/api/insights', insightsRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/login', loginRoutes);
 
 // ✅ Root test route
 app.get("/", (req, res) => {

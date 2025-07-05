@@ -4,6 +4,7 @@ const express = require("express");
 const router = express.Router();
 const db = require("../db");
 const axios = require("axios");
+const bcrypt = require("bcryptjs");
 
 // ============================
 // GET all members
@@ -41,6 +42,7 @@ router.post("/", async (req, res) => {
     health_issues,
     blood_group,
     extra_details,
+    created_by,
   } = req.body;
 
   const pending_amount = total_amount - paid_amount;
@@ -116,6 +118,8 @@ router.post("/", async (req, res) => {
       console.error("❌ SMS failed:", smsErr.message);
     }
 
+    await logActivity(created_by, 'add', 'member', result.insertId, `Added member: ${name}`);
+
     res.json({ message: "✅ Member added successfully", id: result.insertId });
   } catch (err) {
     console.error("❌ Error inserting member:", err);
@@ -147,7 +151,18 @@ router.put("/:id", async (req, res) => {
     health_issues,
     blood_group,
     extra_details,
+    created_by,
+    admin_code
   } = req.body;
+
+  // Require admin_code for edit
+  if (!admin_code) {
+    return res.status(403).json({ message: 'Admin ID required.' });
+  }
+  const [adminRows] = await db.query('SELECT id FROM admin_settings WHERE admin_code = ?', [admin_code]);
+  if (adminRows.length === 0) {
+    return res.status(403).json({ message: 'Invalid admin ID.' });
+  }
 
   const pending_amount = total_amount - paid_amount;
 
@@ -187,8 +202,56 @@ router.put("/:id", async (req, res) => {
 
   try {
     await db.query(sql, values);
+    await logActivity(created_by, 'edit', 'member', req.params.id, `Edited member: ${name}`);
     res.json({ message: "✅ Member updated" });
   } catch (err) {
+    console.error("❌ Error updating member:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ============================
+// PUT - Update body measurements only
+// ============================
+router.put("/:id/measurements", async (req, res) => {
+  const {
+    height,
+    weight,
+    chest,
+    waist,
+    hips,
+    biceps,
+    thighs
+  } = req.body;
+
+  try {
+    // Check if member exists
+    const [memberCheck] = await db.query('SELECT id, name FROM members WHERE id = ?', [req.params.id]);
+    if (memberCheck.length === 0) {
+      return res.status(404).json({ error: "Member not found" });
+    }
+
+    const sql = `
+      UPDATE members SET 
+        height = ?, weight = ?, chest = ?, waist = ?, hips = ?, biceps = ?, thighs = ?,
+        updated_at = NOW()
+      WHERE id = ?
+    `;
+    const values = [
+      height || null,
+      weight || null,
+      chest || null,
+      waist || null,
+      hips || null,
+      biceps || null,
+      thighs || null,
+      req.params.id,
+    ];
+
+    await db.query(sql, values);
+    res.json({ message: "✅ Body measurements updated" });
+  } catch (err) {
+    console.error("❌ Error updating body measurements:", err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -196,10 +259,25 @@ router.put("/:id", async (req, res) => {
 // ============================
 // DELETE - Delete a member
 // ============================
-router.delete("/:id", async (req, res) => {
+router.delete('/:id', async (req, res) => {
+  const { admin_code, staff_code, created_by } = req.body || {};
+  console.log('DELETE /members/:id body:', req.body);
+  let valid = false;
+  if (admin_code) {
+    const [adminRows] = await db.query('SELECT id FROM admin_settings WHERE admin_code = ?', [admin_code]);
+    if (adminRows.length > 0) valid = true;
+  }
+  if (staff_code) {
+    const [staffRows] = await db.query('SELECT id FROM staff WHERE staff_code = ?', [staff_code]);
+    if (staffRows.length > 0) valid = true;
+  }
+  if (!valid) {
+    return res.status(403).json({ message: 'Valid admin or staff ID required.' });
+  }
   try {
-    await db.query("DELETE FROM members WHERE id = ?", [req.params.id]);
-    res.json({ message: "🗑️ Member deleted" });
+    await db.query('DELETE FROM members WHERE id = ?', [req.params.id]);
+    await logActivity(created_by, 'delete', 'member', req.params.id, `Deleted member with id: ${req.params.id}`);
+    res.json({ message: '🗑️ Member deleted' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -208,18 +286,32 @@ router.delete("/:id", async (req, res) => {
 // ============================
 // POST - Delete multiple members
 // ============================
-router.post("/delete", async (req, res) => {
-  const { ids } = req.body;
-
-  if (!Array.isArray(ids) || ids.length === 0) {
-    return res.status(400).json({ error: "No member IDs provided" });
+router.post('/delete', async (req, res) => {
+  const { ids, admin_code, staff_code } = req.body || {};
+  console.log('POST /members/delete body:', req.body);
+  let valid = false;
+  if (admin_code) {
+    const [adminRows] = await db.query('SELECT id FROM admin_settings WHERE admin_code = ?', [admin_code]);
+    if (adminRows.length > 0) valid = true;
   }
-
-  const placeholders = ids.map(() => "?").join(",");
+  if (staff_code) {
+    const [staffRows] = await db.query('SELECT id FROM staff WHERE staff_code = ?', [staff_code]);
+    if (staffRows.length > 0) valid = true;
+  }
+  if (!valid) {
+    return res.status(403).json({ message: 'Valid admin or staff ID required.' });
+  }
+  if (!Array.isArray(ids) || ids.length === 0) {
+    return res.status(400).json({ error: 'No member IDs provided' });
+  }
+  const placeholders = ids.map(() => '?').join(',');
   const sql = `DELETE FROM members WHERE id IN (${placeholders})`;
-
   try {
     await db.query(sql, ids);
+    // Log each deletion
+    for (const memberId of ids) {
+      await logActivity(admin_code || staff_code, 'delete', 'member', memberId, `Deleted member with id: ${memberId}`);
+    }
     res.json({ message: `🗑️ Deleted ${ids.length} member(s)` });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -350,5 +442,94 @@ router.get('/expiring-soon', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch expiring members', details: error.message });
   }
 });
+
+// ============================
+// GET - Payment history for a member
+// ============================
+router.get('/:id/payments', async (req, res) => {
+  const memberId = req.params.id;
+  try {
+    // Get the member's name
+    const [memberRows] = await db.query('SELECT name FROM members WHERE id = ?', [memberId]);
+    if (memberRows.length === 0) {
+      return res.status(404).json({ error: 'Member not found' });
+    }
+    const memberName = memberRows[0].name;
+    // Find all finance records for this member (category 'Membership' and description contains name)
+    const [payments] = await db.query(
+      `SELECT * FROM finances WHERE category = 'Membership' AND description LIKE ? ORDER BY date ASC`,
+      [`%${memberName}%`]
+    );
+    res.json(payments);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ============================
+// POST - Delete a single member (for frontend POST-based deletion)
+// ============================
+router.post('/delete-one', async (req, res) => {
+  const { id, admin_code, staff_code } = req.body || {};
+  console.log('POST /members/delete-one body:', req.body);
+  let valid = false;
+  if (admin_code) {
+    const [adminRows] = await db.query('SELECT id FROM admin_settings WHERE admin_code = ?', [admin_code]);
+    if (adminRows.length > 0) valid = true;
+  }
+  if (staff_code) {
+    const [staffRows] = await db.query('SELECT id FROM staff WHERE staff_code = ?', [staff_code]);
+    if (staffRows.length > 0) valid = true;
+  }
+  if (!valid) {
+    return res.status(403).json({ message: 'Valid admin or staff ID required.' });
+  }
+  if (!id) {
+    return res.status(400).json({ error: 'No member ID provided' });
+  }
+  try {
+    await db.query('DELETE FROM members WHERE id = ?', [id]);
+    await logActivity(admin_code || staff_code, 'delete', 'member', id, `Deleted member with id: ${id}`);
+    res.json({ message: '🗑️ Member deleted' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Helper to verify admin passkey
+async function verifyAdminPasskey(username, passkey) {
+  const [rows] = await db.query('SELECT * FROM admin WHERE username = ?', [username]);
+  const admin = rows[0];
+  if (!admin) return false;
+  const match = await bcrypt.compare(passkey, admin.passkey_hash);
+  return match;
+}
+
+// Helper to log activity
+async function logActivity(created_by, action, target_type, target_id, details) {
+  if (!created_by) return;
+  let staffId = null, adminId = null;
+  const [staffRows] = await db.query('SELECT id FROM staff WHERE staff_code = ?', [created_by]);
+  if (staffRows.length > 0) {
+    staffId = staffRows[0].id;
+  } else {
+    const [adminRows] = await db.query('SELECT id FROM admin_settings WHERE admin_code = ?', [created_by]);
+    if (adminRows.length > 0) adminId = adminRows[0].id;
+  }
+  if (staffId) {
+    await db.query(
+      'INSERT INTO activity_logs (staff_id, action, target_type, target_id, details) VALUES (?, ?, ?, ?, ?)',
+      [staffId, action, target_type, target_id, details]
+    );
+  } else if (adminId) {
+    await db.query(
+      'INSERT INTO activity_logs (admin_id, action, target_type, target_id, details) VALUES (?, ?, ?, ?, ?)',
+      [adminId, action, target_type, target_id, details]
+    );
+  } else {
+    // Optionally log or warn: could not find staff or admin for created_by
+    console.warn('Could not log activity: created_by not found in staff or admin_settings');
+  }
+}
 
 module.exports = router;

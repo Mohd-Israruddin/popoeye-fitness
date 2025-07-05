@@ -23,6 +23,7 @@ import {
 import "./AddFinance.css";
 import { useNavigate } from "react-router-dom";
 import eventBus from "../../service/event-bus";
+import { useAuth } from "../../data/AuthContext";
 
 const AddFinance = () => {
   const [type, setType] = useState("income");
@@ -44,6 +45,7 @@ const AddFinance = () => {
   const [recentTransaction, setRecentTransaction] = useState(null);
 
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const formatDate = (date) => {
     return new Date(date).toISOString().split("T")[0];
@@ -81,10 +83,11 @@ const AddFinance = () => {
       category,
       payment: paymentMethod,
       description,
+      created_by: user?.staff_code || user?.admin_code || ''
     };
 
     try {
-      const response = await axios.post("https://solsparrow-backend.onrender.com/api/finances", financeData);
+      const response = await axios.post("/finances", financeData);
       setMessage("Transaction added successfully!");
       setError(false);
       setRecentTransaction(response.data);

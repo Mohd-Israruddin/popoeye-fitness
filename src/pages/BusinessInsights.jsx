@@ -60,6 +60,7 @@ const BusinessInsights = () => {
     tax: 0
   });
   const alertShownRef = useRef(false);
+  const [members, setMembers] = useState([]);
 
   useEffect(() => {
     if (userRole !== "admin") {
@@ -109,6 +110,7 @@ const BusinessInsights = () => {
 
   useEffect(() => {
     fetchData();
+    api.get('/members').then(res => setMembers(res.data)).catch(() => setMembers([]));
 
     const handleExpenseAdded = () => {
       fetchData();
@@ -138,6 +140,10 @@ const BusinessInsights = () => {
       console.error('Failed to save note:', error);
       toast.error('Failed to save note.');
     }
+  };
+
+  const handleSetExpectedProfit = () => {
+    // Implementation of handleSetExpectedProfit function
   };
 
   if (userRole !== "admin") return null;
@@ -328,6 +334,7 @@ const BusinessInsights = () => {
             onChange={(e) => setExpectedProfit(Number(e.target.value))}
             placeholder="e.g., 80000"
           />
+          <button onClick={handleSetExpectedProfit}>Set</button>
         </div>
 
         <div className="financial-metrics-card">
@@ -364,6 +371,39 @@ const BusinessInsights = () => {
             <h2 className="section-title"><FaChartPie /> Expense Breakdown</h2>
             <div className="pie-chart-wrapper">
               <Pie data={expenseChartData} options={pieChartOptions('Expense Distribution by Category')} />
+            </div>
+          </div>
+
+          <div className="chart-container side-chart package-pie-card">
+            <h2 className="section-title"><FaChartPie /> Membership Package Distribution</h2>
+            <div className="pie-chart-wrapper">
+              {members.length === 0 ? (
+                <div style={{ textAlign: 'center', color: '#888', padding: 32 }}>Loading...</div>
+              ) : (
+                <Pie
+                  data={(function() {
+                    const filtered = members.filter(m => m.package && !['one month', '1 month', 'monthly'].includes((m.package || '').toLowerCase()));
+                    const pkgCounts = filtered.reduce((acc, m) => {
+                      const key = m.package;
+                      acc[key] = (acc[key] || 0) + 1;
+                      return acc;
+                    }, {});
+                    const labels = Object.keys(pkgCounts);
+                    const data = Object.values(pkgCounts);
+                    const colors = ['#6c63ff', '#28B295', '#FF715B', '#FFC107', '#3f51b5', '#2196f3', '#4caf50', '#ff5722', '#9c27b0', '#ffc107'];
+                    return {
+                      labels,
+                      datasets: [{
+                        data,
+                        backgroundColor: colors.slice(0, labels.length),
+                        borderColor: '#fff',
+                        borderWidth: 2,
+                      }],
+                    };
+                  })()}
+                  options={pieChartOptions('Membership Packages')}
+                />
+              )}
             </div>
           </div>
 

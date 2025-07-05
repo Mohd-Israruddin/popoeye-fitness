@@ -4,12 +4,14 @@ import html2canvas from "html2canvas";
 import axios from "axios";
 import "./Schedule.css";
 import { FaCalendarAlt, FaPlus, FaUndo, FaTrash, FaFilePdf, FaFilter, FaEdit } from "react-icons/fa";
+import autoTable from "jspdf-autotable";
 
 const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const times = [
   "6:00 AM", "7:00 AM", "8:00 AM", "9:00 AM", "10:00 AM",
   "11:00 AM", "12:00 PM", "1:00 PM", "2:00 PM", "3:00 PM",
-  "4:00 PM", "5:00 PM", "6:00 PM", "7:00 PM", "8:00 PM"
+  "4:00 PM", "5:00 PM", "6:00 PM", "7:00 PM", "8:00 PM",
+  "9:00 PM", "10:00 PM"
 ];
 
 const categoryLimits = {
@@ -47,7 +49,7 @@ const Schedule = () => {
 
   const fetchMembers = async () => {
     try {
-      const res = await axios.get("https://solsparrow-backend.onrender.com/api/members");
+      const res = await axios.get("/members");
       setMembers(res.data.map(m => m.name));
     } catch (err) {
       console.error("Error fetching members", err);
@@ -57,7 +59,7 @@ const Schedule = () => {
 
   const fetchTrainers = async () => {
     try {
-      const res = await axios.get("https://solsparrow-backend.onrender.com/api/staff");
+      const res = await axios.get("/staff");
       setTrainers(res.data);
     } catch (err) {
       console.error("Error fetching staff", err);
@@ -68,7 +70,7 @@ const Schedule = () => {
   const fetchBookings = async () => {
     try {
       setLoading(true);
-      const res = await axios.get("https://solsparrow-backend.onrender.com/api/schedule");
+      const res = await axios.get("/schedule");
       setBookings(res.data);
     } catch (err) {
       console.error("Error fetching bookings", err);
@@ -111,7 +113,7 @@ const Schedule = () => {
       if (editIndex !== null) {
         // Update existing booking
         const bookingToUpdate = slotBookings[editIndex];
-        await axios.put(`https://solsparrow-backend.onrender.com/api/schedule/${bookingToUpdate.id}`, {
+        await axios.put(`/schedule/${bookingToUpdate.id}`, {
           day: selectedSlot.day,
           time: selectedSlot.time,
           ...form,
@@ -125,7 +127,7 @@ const Schedule = () => {
         setSuccessMessage(`Booking updated for ${form.member} in ${form.category}`);
       } else {
         // Create new booking
-        const res = await axios.post("https://solsparrow-backend.onrender.com/api/schedule", {
+        const res = await axios.post("/schedule", {
           day: selectedSlot.day,
           time: selectedSlot.time,
           ...form,
@@ -166,7 +168,7 @@ const Schedule = () => {
     try {
       setLoading(true);
       setErrorMessage("");
-      await axios.post("https://solsparrow-backend.onrender.com/api/members", { name: newMember });
+      await axios.post("/members", { name: newMember });
       setMembers([...members, newMember]);
       setNewMember("");
       setSuccessMessage("Member added successfully");
@@ -180,20 +182,44 @@ const Schedule = () => {
 
   const handleExportPDF = async () => {
     try {
+      console.log("Starting PDF export...");
       setLoading(true);
-      const input = scheduleRef.current;
-      const canvas = await html2canvas(input);
-      const imgData = canvas.toDataURL("image/png");
       const pdf = new jsPDF("landscape", "mm", "a4");
-      const imgProps = pdf.getImageProperties(imgData);
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-
-      pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
-      pdf.save("Weekly_Schedule.pdf");
-      setSuccessMessage("PDF exported successfully");
+      console.log("PDF object created:", pdf);
+      const margin = 15;
+      let y = margin;
+      pdf.setFontSize(18);
+      pdf.text("Weekly Schedule", pdf.internal.pageSize.getWidth() / 2, y, { align: "center" });
+      y += 10;
+      // Prepare table data
+      const tableData = [];
+      days.forEach(day => {
+        times.forEach(time => {
+          const key = `${day}-${time}`;
+          const slotBookings = bookings[key] || [];
+          if (slotBookings.length > 0) {
+            slotBookings.forEach(booking => {
+              tableData.push([day, time, booking.member, booking.category, booking.trainer]);
+            });
+          } else {
+            tableData.push([day, time, "", "", ""]);
+          }
+        });
+      });
+      
+      autoTable(pdf, {
+        head: [['Day', 'Time', 'Member', 'Category', 'Trainer']],
+        body: tableData,
+        startY: y,
+        margin: { top: margin },
+        styles: { fontSize: 8 },
+        headStyles: { fillColor: [40, 178, 149] }
+      });
+      
+      pdf.save("gym-schedule.pdf");
+      setSuccessMessage("PDF exported successfully!");
     } catch (err) {
-      console.error("PDF export error", err);
+      console.error("PDF export failed:", err);
       setErrorMessage("Failed to export PDF");
     } finally {
       setLoading(false);
@@ -204,8 +230,13 @@ const Schedule = () => {
     const key = `${day}-${time}`;
     const booking = bookings[key][index];
     setSelectedSlot({ day, time });
-    setForm(booking);
+    setForm({
+      member: booking.member,
+      category: booking.category,
+      trainer: booking.trainer
+    });
     setEditIndex(index);
+    setReminder("Editing existing booking...");
   };
 
   const handleUndo = async () => {
@@ -219,7 +250,7 @@ const Schedule = () => {
       setErrorMessage("");
       
       // Delete the booking from backend
-      await axios.delete(`https://solsparrow-backend.onrender.com/api/schedule/${lastBooking.booking.id}`);
+      await axios.delete(`/schedule/${lastBooking.booking.id}`);
       
       // Update frontend state
       const { key, booking } = lastBooking;
@@ -245,7 +276,7 @@ const Schedule = () => {
     try {
       setLoading(true);
       setErrorMessage("");
-      await axios.delete("https://solsparrow-backend.onrender.com/api/schedule");
+      await axios.delete("/schedule");
       setBookings({});
       setLastBooking(null);
       setSuccessMessage("Schedule reset successfully");
@@ -257,23 +288,18 @@ const Schedule = () => {
     }
   };
 
-  const handleDeleteBooking = async (day, time, index) => {
-    const key = `${day}-${time}`;
-    const booking = bookings[key][index];
-    
-    if (!window.confirm(`Are you sure you want to delete ${booking.member}'s booking?`)) {
-      return;
+  const handleDeleteClick = (id) => {
+    if (window.confirm("Are you sure you want to delete this booking?")) {
+      handleDeleteBooking(id);
     }
+  };
 
+  const handleDeleteBooking = async (id) => {
     try {
       setLoading(true);
       setErrorMessage("");
-      await axios.delete(`https://solsparrow-backend.onrender.com/api/schedule/${booking.id}`);
-      
-      const updated = bookings[key].filter((_, idx) => idx !== index);
-      const updatedBookings = { ...bookings, [key]: updated };
-      setBookings(updatedBookings);
-      
+      await axios.delete(`/schedule/${id}`);
+      fetchBookings();
       setSuccessMessage("Booking deleted successfully");
     } catch (err) {
       console.error("Delete error", err);
@@ -311,7 +337,7 @@ const Schedule = () => {
                         Trainer: {booking.trainer}
                         <div className="booking-actions">
                             <button onClick={() => handleEditBooking(day, time, index)}><FaEdit /></button>
-                            <button onClick={() => handleDeleteBooking(day, time, index)}><FaTrash /></button>
+                            <button onClick={() => handleDeleteClick(booking.id)}><FaTrash /></button>
                         </div>
                     </li>
                 ))}
@@ -344,26 +370,26 @@ const Schedule = () => {
         {loading && <div className="loading-msg">Loading...</div>}
 
         {showFilters && (
-          <div className="filters-section">
-            <h3 className="filters-title">Filter Bookings</h3>
-            <div className="filters-container">
-              <div className="filter-item">
+          <div className="schedule-filters-section">
+            <h3 className="schedule-filters-title">Filter Bookings</h3>
+            <div className="schedule-filters-container">
+              <div className="schedule-filter-item">
                 <label htmlFor="memberFilter">By Member</label>
-                <select id="memberFilter" name="member" value={filters.member} onChange={handleFilterChange}>
+                <select id="memberFilter" name="member" value={filters.member} onChange={handleFilterChange} className="schedule-filter-select">
                   <option value="">All Members</option>
                   {members.map(m => <option key={m} value={m}>{m}</option>)}
                 </select>
               </div>
-              <div className="filter-item">
+              <div className="schedule-filter-item">
                 <label htmlFor="categoryFilter">By Category</label>
-                <select id="categoryFilter" name="category" value={filters.category} onChange={handleFilterChange}>
+                <select id="categoryFilter" name="category" value={filters.category} onChange={handleFilterChange} className="schedule-filter-select">
                   <option value="">All Categories</option>
                   {Object.keys(categoryLimits).map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
               </div>
-              <div className="filter-item">
+              <div className="schedule-filter-item">
                 <label htmlFor="trainerFilter">By Trainer</label>
-                <select id="trainerFilter" name="trainer" value={filters.trainer} onChange={handleFilterChange}>
+                <select id="trainerFilter" name="trainer" value={filters.trainer} onChange={handleFilterChange} className="schedule-filter-select">
                   <option value="">All Trainers</option>
                   {trainers.map((trainer) => <option key={trainer.id} value={trainer.name}>{trainer.name}</option>)}
                 </select>

@@ -1,11 +1,22 @@
-import React, { useState } from "react";
-import axios from "axios";
+import React, { useState, useEffect } from "react";
+import api from '../../service/api';
 import "./MemberTable.css";
-import { FaEdit, FaTrash, FaStickyNote, FaUser, FaWhatsapp, FaDumbbell, FaCommentDots, FaSms, FaWeight, FaCommentAlt, FaRulerHorizontal } from 'react-icons/fa';
+import { FaEdit, FaTrash, FaStickyNote, FaUser, FaWhatsapp, FaDumbbell, FaCommentDots, FaWeight, FaCommentAlt, FaRulerHorizontal } from 'react-icons/fa';
+import AdminPasskeyModal from './AdminPasskeyModal';
+import { useAuth } from '../../data/AuthContext';
 
 const MemberTable = ({ members, onEdit, onDelete, onOpenBodyMeasurements }) => {
   const [expandedId, setExpandedId] = useState(null);
   const [selected, setSelected] = useState([]);
+  const [showPasskeyModal, setShowPasskeyModal] = useState(false);
+  const [deleteMode, setDeleteMode] = useState(null);
+  const [pendingDeleteIds, setPendingDeleteIds] = useState([]);
+  const [paymentHistory, setPaymentHistory] = useState({});
+  const [loadingPayments, setLoadingPayments] = useState({});
+  const { user, isAdmin, isStaff } = useAuth();
+
+  // Debug: log the current user object
+  console.log('Current user:', user);
 
   const toggleExpand = (id) => {
     setExpandedId(expandedId === id ? null : id);
@@ -35,7 +46,7 @@ const MemberTable = ({ members, onEdit, onDelete, onOpenBodyMeasurements }) => {
     }
 
     try {
-      const res = await axios.post("https://solsparrow-backend.onrender.com/api/sms/send", {
+      const res = await api.post("/sms/send", {
         name: member.name,
         number: member.whatsapp,
         message: `Hi ${member.name}, your membership expires on ${member.expiry_date}. Please renew soon.`,
@@ -49,7 +60,7 @@ const MemberTable = ({ members, onEdit, onDelete, onOpenBodyMeasurements }) => {
 
   const handleSendBulkSMS = async () => {
     try {
-      const res = await axios.get(`https://solsparrow-backend.onrender.com/api/members/send-remainder/${selected.join(',')}`);
+      const res = await api.get(`/members/send-remainder/${selected.join(',')}`);
       alert(res.data.message || "✅ Expiry reminders sent.");
     } catch (error) {
       console.error("Bulk SMS error:", error);
@@ -57,36 +68,36 @@ const MemberTable = ({ members, onEdit, onDelete, onOpenBodyMeasurements }) => {
     }
   };
 
-  const handleBulkDelete = async () => {
-    if (selected.length === 0) return;
-
-    const confirm = window.confirm(`Are you sure you want to delete ${selected.length} member(s)?`);
-    if (!confirm) return;
-
-    try {
-      await axios.post("https://solsparrow-backend.onrender.com/api/members/delete-multiple", {
-        ids: selected,
-      });
-      alert("🗑️ Selected members deleted.");
-      onDelete(selected);
-      setSelected([]);
-    } catch (error) {
-      console.error("Delete error:", error);
-      alert("❌ Failed to delete selected members.");
-    }
+  const handleSingleDelete = (id) => {
+    setDeleteMode('single');
+    setPendingDeleteIds([id]);
+    setShowPasskeyModal(true);
   };
 
-  const handleSingleDelete = async (id) => {
-    const confirm = window.confirm("Are you sure you want to delete this member?");
-    if (!confirm) return;
+  const handleBulkDelete = () => {
+    if (selected.length === 0) return;
+    setDeleteMode('bulk');
+    setPendingDeleteIds(selected);
+    setShowPasskeyModal(true);
+  };
 
+  const handlePasskeySuccess = async ({ code }) => {
+    setShowPasskeyModal(false);
     try {
-      await axios.delete(`https://solsparrow-backend.onrender.com/api/members/${id}`);
-      alert("🗑️ Member deleted.");
-      onDelete([id]);
-    } catch (error) {
-      console.error("Delete error:", error);
-      alert("❌ Failed to delete member.");
+      if (deleteMode === 'single') {
+        await api.post('/members/delete-one', { id: pendingDeleteIds[0], admin_code: code, staff_code: code });
+        alert('🗑️ Member deleted.');
+        onDelete([pendingDeleteIds[0]]);
+      } else if (deleteMode === 'bulk') {
+        await api.post('/members/delete', { ids: pendingDeleteIds, admin_code: code, staff_code: code });
+        alert('🗑️ Selected members deleted.');
+        onDelete(pendingDeleteIds);
+        setSelected([]);
+      }
+      setPendingDeleteIds([]);
+      setDeleteMode(null);
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to delete.');
     }
   };
 
@@ -110,11 +121,33 @@ const MemberTable = ({ members, onEdit, onDelete, onOpenBodyMeasurements }) => {
     action();
   };
 
+  const fetchPaymentHistory = async (member) => {
+    setLoadingPayments((prev) => ({ ...prev, [member.id]: true }));
+    try {
+      const res = await api.get(`/members/${member.id}/payments`);
+      setPaymentHistory((prev) => ({ ...prev, [member.id]: res.data }));
+    } catch (err) {
+      setPaymentHistory((prev) => ({ ...prev, [member.id]: [] }));
+    } finally {
+      setLoadingPayments((prev) => ({ ...prev, [member.id]: false }));
+    }
+  };
+
+  useEffect(() => {
+    if (expandedId) {
+      const member = members.find((m) => m.id === expandedId);
+      if (member && paymentHistory[member.id] === undefined) {
+        fetchPaymentHistory(member);
+      }
+    }
+    // eslint-disable-next-line
+  }, [expandedId]);
+
   return (
-    <div className="member-table-wrapper">
-      <div className="table-header">
-        <div className="bulk-actions">
-          <label className="select-all-label">
+    <div className="members-table-wrapper">
+      <div className="members-table-header">
+        <div className="members-bulk-actions">
+          <label className="members-select-all-label">
             <input
               type="checkbox"
               onChange={handleSelectAll}
@@ -125,14 +158,14 @@ const MemberTable = ({ members, onEdit, onDelete, onOpenBodyMeasurements }) => {
           {selected.length > 0 && (
             <>
               <button
-                className="bulk-sms-btn"
+                className="members-bulk-sms-btn"
                 onClick={handleSendBulkSMS}
               >
                 <FaCommentDots />
                 <span>Send SMS ({selected.length})</span>
               </button>
               <button
-                className="bulk-delete-btn"
+                className="members-bulk-delete-btn"
                 onClick={handleBulkDelete}
               >
                 <FaTrash />
@@ -141,16 +174,16 @@ const MemberTable = ({ members, onEdit, onDelete, onOpenBodyMeasurements }) => {
             </>
           )}
         </div>
-        <div className="table-info">
+        <div className="members-table-info">
           <span>{members.length} members</span>
         </div>
       </div>
 
-      <div className="table-container">
-        <table className="member-table">
+      <div className="members-table-container">
+        <table className="members-table">
           <thead>
             <tr>
-              <th className="checkbox-header"></th>
+              <th className="members-checkbox-header"></th>
               <th>Member ID</th>
               <th>Name</th>
               <th>WhatsApp</th>
@@ -171,57 +204,57 @@ const MemberTable = ({ members, onEdit, onDelete, onOpenBodyMeasurements }) => {
               return (
                 <React.Fragment key={member.id}>
                   <tr 
-                    className={`member-row ${isSelected ? 'selected' : ''} ${isExpired ? 'expired' : ''}`}
+                    className={`members-row ${isSelected ? 'selected' : ''} ${isExpired ? 'expired' : ''}`}
                     onClick={() => toggleExpand(member.id)}
                   >
-                    <td className="checkbox-cell" onClick={(e) => e.stopPropagation()}>
+                    <td className="members-checkbox-cell" onClick={(e) => e.stopPropagation()}>
                       <input
                         type="checkbox"
                         checked={isSelected}
                         onChange={(e) => handleSelect(e, member.id)}
                       />
                     </td>
-                    <td>{member.member_id}</td>
-                    <td className="member-name-cell">{member.name}</td>
+                    <td className="members-id-cell">{member.member_id}</td>
+                    <td className="members-name-cell">{member.name}</td>
                     <td>
-                      <a href={`https://wa.me/${member.whatsapp}`} target="_blank" rel="noopener noreferrer" className="whatsapp-link">
+                      <a href={`https://wa.me/${member.whatsapp}`} target="_blank" rel="noopener noreferrer" className="members-whatsapp-link">
                         <FaWhatsapp /> {member.whatsapp || 'N/A'}
                       </a>
                     </td>
                     <td>{member.package}</td>
                     <td>{formatDate(member.join_date)}</td>
                     <td>{formatDate(member.expiry_date)}</td>
-                    <td className="total-amount-cell">{formatCurrency(member.total_amount)}</td>
-                    <td className="paid-amount-cell">{formatCurrency(member.paid_amount)}</td>
-                    <td className="due-amount-cell">
+                    <td className="members-total-amount-cell">{formatCurrency(member.total_amount)}</td>
+                    <td className="members-paid-amount-cell">{formatCurrency(member.paid_amount)}</td>
+                    <td className="members-due-amount-cell">
                       {formatCurrency(member.total_amount - member.paid_amount)}
                     </td>
-                    <td className="actions-cell">
-                      <div className="action-buttons">
+                    <td className="members-actions-cell">
+                      <div className="members-action-buttons">
                         <button
                           onClick={(e) => handleActionClick(e, () => handleSendSMS(member))}
-                          className="action-btn action-btn-sms"
+                          className="members-action-btn members-action-btn-sms"
                           title="Send SMS"
                         >
                           <FaCommentAlt />
                         </button>
                         <button
                           onClick={(e) => handleActionClick(e, () => onOpenBodyMeasurements(member))}
-                          className="action-btn action-btn-measure"
+                          className="members-action-btn members-action-btn-measure"
                           title="Body Measurements"
                         >
                           <FaRulerHorizontal />
                         </button>
                         <button
                           onClick={(e) => handleActionClick(e, () => onEdit(member))}
-                          className="action-btn action-btn-edit"
+                          className="members-action-btn members-action-btn-edit"
                           title="Edit Member"
                         >
                           <FaEdit />
                         </button>
                         <button
-                          className="action-btn action-btn-delete"
-                          onClick={(e) => handleActionClick(e, () => onDelete([member.id]))}
+                          className="members-action-btn members-action-btn-delete"
+                          onClick={(e) => handleSingleDelete(member.id)}
                           title="Delete Member"
                         >
                           <FaTrash />
@@ -230,28 +263,67 @@ const MemberTable = ({ members, onEdit, onDelete, onOpenBodyMeasurements }) => {
                     </td>
                   </tr>
                   {expandedId === member.id && (
-                    <tr className="expanded-row">
+                    <tr className="members-expanded-row">
                       <td colSpan="11">
-                        <div className="member-details-expanded">
-                          <div className="details-grid">
-                            <div className="detail-section">
+                        <div className="members-details-expanded">
+                          <div className="members-details-grid">
+                            <div className="members-detail-section">
                               <p><strong>Address:</strong> {member.address || "N/A"}</p>
                               <p><strong>Email:</strong> {member.email || "N/A"}</p>
                               <p><strong>Health Issues:</strong> {member.health_issues || "N/A"}</p>
                               <p><strong>Blood Group:</strong> {member.blood_group || "N/A"}</p>
                             </div>
-                            <div className="detail-section">
+                            <div className="members-detail-section">
                               <p><strong>Height:</strong> {member.height || "-"} cm</p>
                               <p><strong>Weight:</strong> {member.weight || "-"} kg</p>
                               <p><strong>Chest:</strong> {member.chest || "-"} cm</p>
                               <p><strong>Waist:</strong> {member.waist || "-"} cm</p>
                             </div>
-                            <div className="detail-section">
+                            <div className="members-detail-section">
                               <p><strong>Hips:</strong> {member.hips || "-"} cm</p>
                               <p><strong>Biceps:</strong> {member.biceps || "-"} cm</p>
                               <p><strong>Thighs:</strong> {member.thighs || "-"} cm</p>
                               <p><strong>Extra Details:</strong> {member.extra_details || "N/A"}</p>
                             </div>
+                          </div>
+                          {/* Payment/Renewal History Section */}
+                          <div className="members-payment-history-section">
+                            <h4>Payment & Renewal History</h4>
+                            <div className="members-payment-history-summary">
+                              <span><strong>Join Date:</strong> {formatDate(member.join_date)}</span>
+                              <span><strong>Expiry Date:</strong> {formatDate(member.expiry_date)}</span>
+                              <span><strong>Package:</strong> {member.package || 'N/A'}</span>
+                            </div>
+                            {loadingPayments[member.id] ? (
+                              <div>Loading...</div>
+                            ) : (
+                              <table className="members-payment-history-table">
+                                <thead>
+                                  <tr>
+                                    <th>Date</th>
+                                    <th>Amount</th>
+                                    <th>Payment Method</th>
+                                    <th>Description</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {(paymentHistory[member.id] && paymentHistory[member.id].length > 0) ? (
+                                    paymentHistory[member.id].map((payment) => (
+                                      <tr key={payment.id}>
+                                        <td>{formatDate(payment.date)}</td>
+                                        <td>{formatCurrency(payment.amount)}</td>
+                                        <td>{payment.payment}</td>
+                                        <td>{payment.description}</td>
+                                      </tr>
+                                    ))
+                                  ) : (
+                                    <tr>
+                                      <td colSpan="4">No payment/renewal history found.</td>
+                                    </tr>
+                                  )}
+                                </tbody>
+                              </table>
+                            )}
                           </div>
                         </div>
                       </td>
@@ -271,6 +343,12 @@ const MemberTable = ({ members, onEdit, onDelete, onOpenBodyMeasurements }) => {
           </div>
         )}
       </div>
+      <AdminPasskeyModal
+        show={showPasskeyModal}
+        onClose={() => setShowPasskeyModal(false)}
+        onSuccess={handlePasskeySuccess}
+        label="Enter your Admin/Staff ID to confirm deletion:"
+      />
     </div>
   );
 };

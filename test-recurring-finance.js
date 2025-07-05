@@ -1,6 +1,6 @@
 const axios = require('axios');
 
-const BASE_URL = 'https://solsparrow-backend.onrender.com/api';
+const BASE_URL = 'http://localhost:5000/api';
 
 async function testRecurringFinanceIntegration() {
   console.log('🧪 Testing Recurring Transactions Integration with View Finances\n');

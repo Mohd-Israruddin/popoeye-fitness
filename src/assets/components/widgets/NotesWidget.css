@@ -1,111 +1,92 @@
-.notes-widget-container {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-}
+.notes-widget-container { all: unset; }
 
+.widget {
+  background: #23272f;
+  border-radius: 14px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+  color: #E3E3E0;
+  font-family: 'Poppins', sans-serif;
+  display: flex;
+  flex-direction: column;
+  min-height: 320px;
+}
+.widget-header {
+  padding: 1.2rem 1.5rem 0.5rem 1.5rem;
+  border-bottom: none;
+  background: none;
+}
+.widget-title h3 {
+  color: #28B295;
+  font-weight: 700;
+  font-size: 1.15rem;
+  margin: 0;
+}
+.widget-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 0 1.5rem 1.5rem;
+  gap: 1rem;
+}
 .notes-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
 }
-
 .notes-header h3 {
-    margin: 0;
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: #e5e7eb;
+  color: #28B295;
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin: 0;
 }
-
 .edit-btn, .save-btn, .cancel-btn {
-    background: none;
-    border: none;
-    color: #9ca3af;
-    cursor: pointer;
-    padding: 0.5rem;
-    border-radius: 4px;
-    transition: all 0.2s;
-    font-size: 1rem;
+  background: none;
+  border: none;
+  color: #b0b3b8;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 4px;
+  transition: all 0.2s;
+  font-size: 1rem;
 }
-
-.edit-btn:hover {
-    color: #3b82f6;
-    background-color: rgba(59, 130, 246, 0.1);
-}
-
-.save-btn:hover {
-    color: #22c55e;
-    background-color: rgba(34, 197, 94, 0.1);
-}
-
-.cancel-btn:hover {
-    color: #ef4444;
-    background-color: rgba(239, 68, 68, 0.1);
-}
-
-.save-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
-.edit-actions {
-    display: flex;
-    gap: 0.5rem;
-}
-
-.notes-content {
-    flex-grow: 1;
-    display: flex;
-    flex-direction: column;
-}
-
+.edit-btn:hover { color: #28B295; background: rgba(40,178,149,0.08); }
+.save-btn:hover { color: #28B295; background: rgba(40,178,149,0.12); }
+.cancel-btn:hover { color: #ef4444; background: rgba(239,68,68,0.12); }
+.save-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.edit-actions { display: flex; gap: 0.5rem; }
+.notes-content { flex: 1; display: flex; flex-direction: column; }
 .notes-textarea {
-    width: 100%;
-    height: 100%;
-    background-color: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 6px;
-    padding: 0.75rem;
-    color: #e5e7eb;
-    font-family: inherit;
-    font-size: 0.9rem;
-    resize: none;
-    outline: none;
-    transition: border-color 0.2s;
+  width: 100%;
+  height: 100%;
+  background: #23272f;
+  border: 1px solid #28B295;
+  border-radius: 8px;
+  padding: 0.75rem;
+  color: #E3E3E0;
+  font-family: inherit;
+  font-size: 0.95rem;
+  resize: none;
+  outline: none;
+  transition: border-color 0.2s;
 }
-
-.notes-textarea:focus {
-    border-color: #3b82f6;
-}
-
-.notes-textarea::placeholder {
-    color: #9ca3af;
-}
-
+.notes-textarea:focus { border-color: #D6F84C; }
+.notes-textarea::placeholder { color: #b0b3b8; }
 .notes-display {
-    flex-grow: 1;
-    background-color: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 6px;
-    padding: 0.75rem;
-    overflow-y: auto;
+  flex: 1;
+  background: #23272f;
+  border: 1px solid #28B295;
+  border-radius: 8px;
+  padding: 0.75rem;
+  overflow-y: auto;
 }
-
-.notes-display p {
-    margin: 0;
-    color: #e5e7eb;
-    font-size: 0.9rem;
-    line-height: 1.5;
-    white-space: pre-wrap;
-}
-
-.empty-note {
-    color: #9ca3af !important;
-    font-style: italic;
-    text-align: center;
-    margin-top: 2rem !important;
+.notes-display p { color: #E3E3E0; font-size: 0.95rem; line-height: 1.5; white-space: pre-wrap; }
+.empty-note { color: #b0b3b8 !important; font-style: italic; text-align: center; margin-top: 2rem !important; }
+@media (max-width: 600px) {
+  .widget-header, .widget-content { padding: 1rem; }
+  .widget { min-height: 220px; }
+  .notes-header { margin-bottom: 0.5rem; }
+  .notes-textarea, .notes-display { padding: 0.5rem; }
 } 

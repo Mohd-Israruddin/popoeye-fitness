@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import api from '../service/api';
 import MemberTable from "../assets/components/MemberTable";
 import SearchBar from "../assets/components/SearchBar";
 import MemberForm from "../assets/components/MemberForm";
 import BodyMeasurementsForm from "../assets/components/BodyMeasurementsForm";
+import AdminPasskeyModal from '../assets/components/AdminPasskeyModal';
 import { FaUserPlus, FaEnvelope, FaUsers, FaUserTimes, FaUserClock, FaChartBar, FaFilter } from "react-icons/fa";
 import { FiUsers, FiUserCheck, FiUserX, FiAlertTriangle, FiMail, FiPlus } from 'react-icons/fi';
 import "./Members.css";
@@ -21,6 +22,11 @@ const Members = () => {
   const [smsLoading, setSmsLoading] = useState(false);
   const [smsMessage, setSmsMessage] = useState("");
   const [showFilters, setShowFilters] = useState(false);
+  const [showCodeModal, setShowCodeModal] = useState(false);
+  const [pendingEdit, setPendingEdit] = useState(null);
+  const [pendingEditData, setPendingEditData] = useState(null);
+  const [pendingAddData, setPendingAddData] = useState(null);
+  const [addOrEditMode, setAddOrEditMode] = useState(null); // 'add' or 'edit'
 
   const today = new Date();
 
@@ -34,7 +40,7 @@ const Members = () => {
 
   const fetchMembers = async () => {
     try {
-      const res = await axios.get("https://solsparrow-backend.onrender.com/api/members");
+      const res = await api.get("/members");
       setMembers(res.data);
       setFilteredMembers(res.data);
     } catch (error) {
@@ -74,23 +80,68 @@ const Members = () => {
   };
 
   const handleSave = async (newMember) => {
+    if (editing) {
+      setPendingEdit(editing.id);
+      setPendingEditData(newMember);
+      setAddOrEditMode('edit');
+      setShowCodeModal(true);
+    } else {
+      setPendingAddData(newMember);
+      setAddOrEditMode('add');
+      setShowCodeModal(true);
+    }
+  };
+
+  const handleSaveBodyMeasurements = async (measurements) => {
+    if (!bodyMember) return;
+    
     try {
-      if (editing) {
-        await axios.put(`https://solsparrow-backend.onrender.com/api/members/${editing.id}`, newMember);
-      } else {
-        await axios.post("https://solsparrow-backend.onrender.com/api/members", newMember);
-      }
-      setShowForm(false);
-      setEditing(null);
+      // Call the API to update only body measurements
+      await api.put(`/members/${bodyMember.id}/measurements`, measurements);
+      
+      // Refresh the members list
       fetchMembers();
+      
+      // Close the form
+      setShowBodyForm(false);
+      setBodyMember(null);
+      
+      alert('✅ Body measurements saved successfully!');
     } catch (error) {
-      console.error("Error saving member:", error);
+      console.error('Error saving body measurements:', error);
+      alert('❌ Failed to save body measurements. Please try again.');
+    }
+  };
+
+  // Called when modal is confirmed
+  const handleCodeModalSuccess = async ({ code }) => {
+    setShowCodeModal(false);
+    try {
+      if (addOrEditMode === 'edit') {
+        await api.put(`/members/${pendingEdit}`, { ...pendingEditData, admin_code: code, staff_code: code, created_by: code });
+        setShowForm(false);
+        setEditing(null);
+        setPendingEdit(null);
+        setPendingEditData(null);
+        setAddOrEditMode(null);
+        fetchMembers();
+      } else if (addOrEditMode === 'add') {
+        await api.post("/members", { ...pendingAddData, created_by: code });
+        setShowForm(false);
+        setEditing(null);
+        setPendingAddData(null);
+        setAddOrEditMode(null);
+        fetchMembers();
+      }
+    } catch (error) {
+      console.error("Error saving:", error);
+      alert(error.response?.data?.message || 'Failed to save.');
     }
   };
 
   const handleDelete = async (ids) => {
     try {
-      await Promise.all(ids.map((id) => axios.delete(`https://solsparrow-backend.onrender.com/api/members/${id}`)));
+      await Promise.all(ids.map((id) => api.delete(`/members/${id}`)));
       fetchMembers();
     } catch (error) {
       console.error("Error deleting members:", error);
@@ -101,7 +152,7 @@ const Members = () => {
     setSmsLoading(true);
     setSmsMessage("");
     try {
-      const res = await axios.get("https://solsparrow-backend.onrender.com/api/members/send-expiry-reminders");
+      const res = await api.get("/members/send-expiry-reminders");
       setSmsMessage(res.data.message || "SMS sent successfully!");
     } catch (error) {
       setSmsMessage("Failed to send SMS reminders.");
@@ -135,76 +186,112 @@ const Members = () => {
   return (
     <div className="members-page">
       {/* Hero Section */}
-      <div className="hero-section">
-        <div className="hero-content">
-          <h1>Member Management</h1>
-          <p>An overview of your gym's membership status.</p>
-        </div>
-        <div className="action-buttons">
-          <button className="btn" onClick={() => console.log('Send Reminders clicked!')}>
-            <FiMail />
-            <span>Send Reminders</span>
-          </button>
-          <button className="btn btn-primary" onClick={() => setShowForm(true)}>
-            <FiPlus />
-            <span>Add New Member</span>
-          </button>
+      <div className="members-hero-section">
+        <div className="members-hero-content">
+          <div className="members-header-left">
+            <h1>Member Management</h1>
+            <p>An overview of your gym's membership status.</p>
+          </div>
+          <div className="members-action-buttons">
+            <button className="members-btn" onClick={() => console.log('Send Reminders clicked!')}>
+              <FiMail />
+              <span>Send Reminders</span>
+            </button>
+            <button className="members-btn members-btn-primary" onClick={() => setShowForm(true)}>
+              <FiPlus />
+              <span>Add New Member</span>
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Statistics Cards */}
-      <div className="stats-grid">
-        <div className="stat-card total">
-          <div className="stat-icon">
+      <div className="members-stats-grid">
+        <div className="members-stat-card total">
+          <div className="members-stat-icon">
             <FiUsers />
           </div>
-          <div className="stat-content">
+          <div className="members-stat-content">
             <h3>{totalMembers}</h3>
             <p>Total Members</p>
           </div>
         </div>
-        <div className="stat-card active">
-          <div className="stat-icon">
+        <div className="members-stat-card active">
+          <div className="members-stat-icon">
             <FiUserCheck />
           </div>
-          <div className="stat-content">
+          <div className="members-stat-content">
             <h3>{activeMembers}</h3>
             <p>Active Members</p>
           </div>
         </div>
-        <div className="stat-card expiring">
-          <div className="stat-icon">
+        <div className="members-stat-card expiring">
+          <div className="members-stat-icon">
             <FiAlertTriangle />
           </div>
-          <div className="stat-content">
+          <div className="members-stat-content">
             <h3>{expiringMembers}</h3>
             <p>Expiring Soon</p>
           </div>
         </div>
-        <div className="stat-card expired">
-          <div className="stat-icon">
+        <div className="members-stat-card expired">
+          <div className="members-stat-icon">
             <FiUserX />
           </div>
-          <div className="stat-content">
+          <div className="members-stat-content">
             <h3>{expiredMembers}</h3>
             <p>Expired Members</p>
           </div>
         </div>
       </div>
 
+      {/* Package Distribution Section */}
+      <div className="members-package-distribution-section">
+        <h3>Membership Package Distribution</h3>
+        <div className="members-package-distribution-list">
+          {Object.entries(
+            members.filter(m => m.package && !['one month', '1 month', 'monthly'].includes((m.package || '').toLowerCase()))
+              .reduce((acc, m) => {
+                const key = m.package;
+                acc[key] = (acc[key] || 0) + 1;
+                return acc;
+              }, {})
+          ).map(([pkg, count]) => {
+            const percent = totalMembers > 0 ? ((count / totalMembers) * 100).toFixed(1) : 0;
+            return (
+              <div key={pkg} className="members-package-card">
+                <div className="members-package-name">{pkg}</div>
+                <div className="members-package-count">{count}</div>
+                <div className="members-package-percent">{percent}% of members</div>
+              </div>
+            );
+          })}
+          {Object.keys(
+            members.filter(m => m.package && !['one month', '1 month', 'monthly'].includes((m.package || '').toLowerCase()))
+              .reduce((acc, m) => {
+                const key = m.package;
+                acc[key] = (acc[key] || 0) + 1;
+                return acc;
+              }, {})
+          ).length === 0 && (
+            <div className="members-package-none">No multi-month packages found.</div>
+          )}
+        </div>
+      </div>
+
       {/* SMS Message */}
       {smsMessage && (
-        <div className={`sms-message ${smsMessage.includes('Failed') ? 'error' : 'success'}`}>
+        <div className={`members-sms-message ${smsMessage.includes('Failed') ? 'error' : 'success'}`}>
           {smsMessage}
         </div>
       )}
 
       {/* Search and Controls Section */}
-      <div className="controls-section">
-        <div className="search-section">
+      <div className="members-controls-section">
+        <div className="members-search-section">
           <SearchBar onSearch={handleSearch} />
           <button 
-            className="btn filter-toggle"
+            className="members-btn members-filter-toggle"
             onClick={() => setShowFilters(!showFilters)}
           >
             <FaFilter />
@@ -213,10 +300,10 @@ const Members = () => {
         </div>
         
         {showFilters && (
-          <div className="filters-panel">
-            <div className="filter-group">
+          <div className="members-filters-panel">
+            <div className="members-filter-group">
               <label>Status Filter:</label>
-              <div className="filter-buttons">
+              <div className="members-filter-buttons">
                 <button 
                   onClick={() => setActiveFilter('all')} 
                   className={activeFilter === 'all' ? 'active' : ''}
@@ -238,11 +325,11 @@ const Members = () => {
               </div>
             </div>
             
-            <div className="filter-group">
+            <div className="members-filter-group">
               <label>Package Filter:</label>
               <select 
                 onChange={(e) => setPackageFilter(e.target.value)} 
-                className="package-filter"
+                className="members-package-filter"
                 value={packageFilter}
               >
                 <option value="all">All Packages</option>
@@ -254,20 +341,20 @@ const Members = () => {
       </div>
 
       {/* Results Summary */}
-      <div className="results-summary">
-        <div className="results-info">
+      <div className="members-results-summary">
+        <div className="members-results-info">
           <FaChartBar />
           <span>Showing {filteredMembers.length} of {totalMembers} members</span>
         </div>
         {activeFilter !== 'all' && (
-          <div className="active-filter">
+          <div className="members-active-filter">
             Filter: {activeFilter === 'expired' ? 'Expired Members' : 'Expiring Soon'}
           </div>
         )}
       </div>
 
       {/* Members Table */}
-      <div className="table-section">
+      <div className="members-table-section">
         <MemberTable
           members={filteredMembers}
           onEdit={(member) => {
@@ -293,10 +380,29 @@ const Members = () => {
       {showBodyForm && (
         <BodyMeasurementsForm
           member={bodyMember}
+          measurements={{
+            height: bodyMember?.height || '',
+            weight: bodyMember?.weight || '',
+            chest: bodyMember?.chest || '',
+            waist: bodyMember?.waist || '',
+            hips: bodyMember?.hips || '',
+            biceps: bodyMember?.biceps || '',
+            thighs: bodyMember?.thighs || ''
+          }}
           onClose={() => setShowBodyForm(false)}
-          onSave={fetchMembers}
+          onSave={handleSaveBodyMeasurements}
         />
       )}
+      <AdminPasskeyModal
+        show={showCodeModal}
+        onClose={() => setShowCodeModal(false)}
+        onSuccess={handleCodeModalSuccess}
+        label={
+          addOrEditMode === 'add'
+            ? "Enter your Admin/Staff ID to confirm adding member:"
+            : "Enter your Admin/Staff ID to confirm editing member:"
+        }
+      />
     </div>
   );
 };

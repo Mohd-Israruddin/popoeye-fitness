@@ -1,135 +1,185 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { FiSettings, FiSave, FiShield, FiUser, FiMail, FiPhone, FiClock, FiBell, FiTrash2, FiInstagram } from 'react-icons/fi';
+import { FiSettings, FiSave, FiShield, FiUser, FiMail, FiPhone, FiClock, FiBell, FiTrash2, FiInstagram, FiDatabase, FiRefreshCw, FiInfo, FiAlertTriangle, FiBox, FiDollarSign, FiGrid, FiUsers, FiFileText } from 'react-icons/fi';
+import TermsAgreementModal from '../assets/components/TermsAgreementModal';
 import './Settings.css';
 
 const Settings = () => {
-  // General settings state
-  const [settings, setSettings] = useState({
-    gym_name: '',
-    contact_email: '',
-    contact_phone: '',
-    opening_hours: '',
-    notifications_enabled: true,
+  // New settings state
+  const [lowStockThreshold, setLowStockThreshold] = useState(5);
+  const [expenseLimit, setExpenseLimit] = useState(100000);
+  const [thresholdMsg, setThresholdMsg] = useState('');
+  const [expenseLimitMsg, setExpenseLimitMsg] = useState('');
+  const [layoutResetMsg, setLayoutResetMsg] = useState('');
+  const [systemInfo, setSystemInfo] = useState({
+    totalMembers: 0,
+    totalStaff: 0,
+    totalInventory: 0,
+    totalFinances: 0,
+    lastBackup: null,
+    systemVersion: '1.0.0'
   });
-  const [loading, setLoading] = useState(true);
-  const [saveMsg, setSaveMsg] = useState('');
 
-  // Admin creation state
-  const [adminExists, setAdminExists] = useState(true);
-  const [createAdmin, setCreateAdmin] = useState({ username: '', passkey: '', confirm_passkey: '' });
-  const [createMsg, setCreateMsg] = useState('');
-  const [createLoading, setCreateLoading] = useState(false);
-
-  // Admin passkey change state
-  const [changePass, setChangePass] = useState({ username: '', old_passkey: '', new_passkey: '', confirm_passkey: '' });
-  const [changeMsg, setChangeMsg] = useState('');
-  const [changeLoading, setChangeLoading] = useState(false);
-
-  // Reset passkey state
-  const [showReset, setShowReset] = useState(false);
-  const [resetData, setResetData] = useState({ username: '', new_passkey: '', confirm_passkey: '' });
-  const [resetMsg, setResetMsg] = useState('');
-  const [resetLoading, setResetLoading] = useState(false);
+  // Admin management state
+  const [changeAdmin, setChangeAdmin] = useState({ username: '', phone: '', new_admin_code: '', confirm_admin_code: '' });
+  const [changeAdminMsg, setChangeAdminMsg] = useState('');
+  const [changeAdminLoading, setChangeAdminLoading] = useState(false);
 
   // Reset admin state
   const [showResetAdmin, setShowResetAdmin] = useState(false);
-  const [resetAdminData, setResetAdminData] = useState({ username: '', passkey: '' });
+  const [resetAdminData, setResetAdminData] = useState({ username: '', admin_code: '' });
   const [resetAdminMsg, setResetAdminMsg] = useState('');
   const [resetAdminLoading, setResetAdminLoading] = useState(false);
 
+  // Staff management state
+  const [staffList, setStaffList] = useState([]);
+  const [selectedStaff, setSelectedStaff] = useState('');
+  const [newStaffCode, setNewStaffCode] = useState('');
+  const [confirmStaffCode, setConfirmStaffCode] = useState('');
+  const [staffCodeMsg, setStaffCodeMsg] = useState('');
+  const [staffCodeLoading, setStaffCodeLoading] = useState(false);
+
+  // Terms and Agreement state
+  const [showTermsModal, setShowTermsModal] = useState(false);
+
   useEffect(() => {
     fetchSettings();
-    checkAdminExists();
+    fetchSystemInfo();
+    fetchStaffList();
   }, []);
 
   const fetchSettings = async () => {
-    setLoading(true);
     try {
-      const res = await axios.get('/api/settings');
-      setSettings({ ...settings, ...res.data });
+      const [thresholdRes, expenseRes] = await Promise.all([
+        axios.get('/settings/low-stock-threshold'),
+        axios.get('/settings/expense-limit')
+      ]);
+      
+      setLowStockThreshold(thresholdRes.data.threshold);
+      setExpenseLimit(expenseRes.data.limit);
     } catch (err) {
-      setSaveMsg('Failed to load settings.');
-    } finally {
-      setLoading(false);
+      console.error('Failed to load settings:', err);
     }
   };
 
-  const checkAdminExists = async () => {
+  const fetchSystemInfo = async () => {
     try {
-      const res = await axios.get('/api/settings/admin/exists');
-      setAdminExists(res.data.exists);
-    } catch {
-      setAdminExists(true); // fallback: assume exists
-    }
-  };
+      const [membersRes, staffRes, inventoryRes, financesRes] = await Promise.all([
+        axios.get('/members').catch(() => ({ data: [] })),
+        axios.get('/staff').catch(() => ({ data: [] })),
+        axios.get('/inventory').catch(() => ({ data: [] })),
+        axios.get('/finances').catch(() => ({ data: [] }))
+      ]);
 
-  const handleSettingsChange = e => {
-    const { name, value, type, checked } = e.target;
-    setSettings(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
-  };
-
-  const handleSettingsSave = async e => {
-    e.preventDefault();
-    setSaveMsg('');
-    try {
-      await axios.post('/api/settings', settings);
-      setSaveMsg('Settings saved!');
+      setSystemInfo({
+        totalMembers: membersRes.data.length,
+        totalStaff: staffRes.data.length,
+        totalInventory: inventoryRes.data.length,
+        totalFinances: financesRes.data.length,
+        lastBackup: null,
+        systemVersion: '1.0.0'
+      });
     } catch (err) {
-      setSaveMsg('Failed to save settings.');
+      console.error('Failed to fetch system info:', err);
     }
   };
 
-  // Admin creation logic
-  const handleCreateAdmin = async e => {
+  const fetchStaffList = async () => {
+    try {
+      const response = await axios.get('/staff');
+      setStaffList(response.data);
+    } catch (err) {
+      console.error('Failed to fetch staff list:', err);
+    }
+  };
+
+  // Low stock threshold handlers
+  const handleThresholdSave = async () => {
+    setThresholdMsg('');
+    try {
+      await axios.put('/settings/low-stock-threshold', { threshold: lowStockThreshold });
+      setThresholdMsg('Low stock threshold updated successfully!');
+    } catch (err) {
+      setThresholdMsg('Failed to update threshold.');
+    }
+  };
+
+  // Expense limit handlers
+  const handleExpenseLimitSave = async () => {
+    setExpenseLimitMsg('');
+    try {
+      await axios.post('/settings/expense-limit', { limit: expenseLimit });
+      setExpenseLimitMsg('Expense limit updated successfully!');
+    } catch (err) {
+      setExpenseLimitMsg('Failed to update expense limit.');
+    }
+  };
+
+  // Dashboard layout reset
+  const handleLayoutReset = async () => {
+    setLayoutResetMsg('');
+    try {
+      await axios.post('/settings/dashboard-layout', { layout: { lg: [] } });
+      setLayoutResetMsg('Dashboard layout reset successfully!');
+    } catch (err) {
+      setLayoutResetMsg('Failed to reset dashboard layout.');
+    }
+  };
+
+  // Admin code change handler
+  const handleChangeAdmin = async (e) => {
     e.preventDefault();
-    setCreateMsg('');
-    if (createAdmin.passkey !== createAdmin.confirm_passkey) {
-      setCreateMsg('Pass keys do not match.');
+    setChangeAdminMsg('');
+    if (changeAdmin.new_admin_code !== changeAdmin.confirm_admin_code) {
+      setChangeAdminMsg('New admin codes do not match.');
       return;
     }
-    setCreateLoading(true);
+    if (!changeAdmin.username || !changeAdmin.phone) {
+      setChangeAdminMsg('Username and phone number are required.');
+      return;
+    }
+    setChangeAdminLoading(true);
     try {
-      await axios.post('/api/settings/admin/create', {
-        username: createAdmin.username,
-        passkey: createAdmin.passkey,
+      await axios.post('/settings/admin/change-admin-code', {
+        username: changeAdmin.username,
+        phone: changeAdmin.phone,
+        new_admin_code: changeAdmin.new_admin_code,
       });
-      setCreateMsg('Admin created successfully!');
-      setAdminExists(true);
+      setChangeAdminMsg('Admin code changed successfully!');
+      setChangeAdmin({ username: '', phone: '', new_admin_code: '', confirm_admin_code: '' });
     } catch (err) {
-      setCreateMsg(err.response?.data?.error || 'Failed to create admin.');
+      setChangeAdminMsg(err.response?.data?.error || 'Failed to change admin code. Please verify username and phone number.');
     } finally {
-      setCreateLoading(false);
+      setChangeAdminLoading(false);
     }
   };
 
-  // Reset admin logic
-  const handleResetAdmin = async e => {
+  // Reset admin handler
+  const handleResetAdmin = async (e) => {
     e.preventDefault();
     setResetAdminMsg('');
     
-    if (!resetAdminData.username || !resetAdminData.passkey) {
-      setResetAdminMsg('Please enter both admin username and passkey.');
+    if (!resetAdminData.username || !resetAdminData.admin_code) {
+      setResetAdminMsg('Please enter both admin username and admin code.');
       return;
     }
     
     setResetAdminLoading(true);
     try {
-      // First verify the admin credentials
-      const verifyResponse = await axios.post('/api/settings/admin/verify-passkey', {
+      // First verify the admin credentials using admin code
+      const verifyResponse = await axios.post('/settings/admin/verify-admin-code', {
         username: resetAdminData.username,
-        passkey: resetAdminData.passkey
+        admin_code: resetAdminData.admin_code
       });
       
       if (verifyResponse.data.success) {
         // If verification successful, proceed with reset
-        await axios.delete('/api/settings/admin/reset');
+        await axios.delete('/settings/admin/reset');
         setResetAdminMsg('Admin has been reset successfully! You can now create a new admin.');
-        setAdminExists(false);
         setShowResetAdmin(false);
-        setResetAdminData({ username: '', passkey: '' });
+        setResetAdminData({ username: '', admin_code: '' });
       } else {
-        setResetAdminMsg('Invalid admin credentials. Please check your username and passkey.');
+        setResetAdminMsg('Invalid admin credentials. Please check your username and admin code.');
       }
     } catch (err) {
       setResetAdminMsg(err.response?.data?.error || 'Failed to reset admin. Please verify your credentials.');
@@ -138,50 +188,35 @@ const Settings = () => {
     }
   };
 
-  // Admin passkey change logic
-  const handleChangePass = async e => {
+  // Staff code change handler
+  const handleChangeStaffCode = async (e) => {
     e.preventDefault();
-    setChangeMsg('');
-    if (changePass.new_passkey !== changePass.confirm_passkey) {
-      setChangeMsg('New pass keys do not match.');
+    setStaffCodeMsg('');
+    if (!selectedStaff) {
+      setStaffCodeMsg('Please select a staff member.');
       return;
     }
-    setChangeLoading(true);
-    try {
-      await axios.post('/api/settings/admin/change-passkey', {
-        username: changePass.username,
-        old_passkey: changePass.old_passkey,
-        new_passkey: changePass.new_passkey,
-      });
-      setChangeMsg('Pass key changed successfully!');
-      setChangePass({ username: '', old_passkey: '', new_passkey: '', confirm_passkey: '' });
-    } catch (err) {
-      setChangeMsg(err.response?.data?.error || 'Failed to change pass key.');
-    } finally {
-      setChangeLoading(false);
-    }
-  };
-
-  // Reset passkey logic
-  const handleReset = async e => {
-    e.preventDefault();
-    setResetMsg('');
-    if (resetData.new_passkey !== resetData.confirm_passkey) {
-      setResetMsg('New pass keys do not match.');
+    if (newStaffCode !== confirmStaffCode) {
+      setStaffCodeMsg('Staff codes do not match.');
       return;
     }
-    setResetLoading(true);
+    if (!newStaffCode) {
+      setStaffCodeMsg('Please enter a new staff code.');
+      return;
+    }
+    setStaffCodeLoading(true);
     try {
-      await axios.post('/api/settings/admin/reset-passkey', {
-        username: resetData.username,
-        new_passkey: resetData.new_passkey,
+      await axios.put(`/staff/${selectedStaff}/code`, {
+        staff_code: newStaffCode
       });
-      setResetMsg('Pass key reset successfully!');
-      setResetData({ username: '', new_passkey: '', confirm_passkey: '' });
+      setStaffCodeMsg('Staff code changed successfully!');
+      setSelectedStaff('');
+      setNewStaffCode('');
+      setConfirmStaffCode('');
     } catch (err) {
-      setResetMsg(err.response?.data?.error || 'Failed to reset pass key.');
+      setStaffCodeMsg(err.response?.data?.error || 'Failed to change staff code.');
     } finally {
-      setResetLoading(false);
+      setStaffCodeLoading(false);
     }
   };
 
@@ -191,7 +226,7 @@ const Settings = () => {
       <div className="hero-section">
         <div className="hero-content">
           <h1>Settings & Configuration</h1>
-          <p>Manage your gym's settings and administrative access.</p>
+          <p>Manage your gym's settings and system configuration.</p>
         </div>
         <div className="hero-actions">
           <FiSettings size={24} />
@@ -199,126 +234,269 @@ const Settings = () => {
       </div>
 
       <div className="settings-grid">
-        {/* Admin Creation Section (only if no admin exists) */}
-        {!adminExists && (
-          <div className="settings-card">
-            <h3>Create Admin (First Time Setup)</h3>
-            <form onSubmit={handleCreateAdmin}>
-              <div className="form-group">
-                <label htmlFor="create-username">Admin Username</label>
-                <input 
-                  id="create-username"
-                  name="username"
-                  className="modal-input"
-                  value={createAdmin.username} 
-                  onChange={e => setCreateAdmin(p => ({ ...p, username: e.target.value }))} 
-                  placeholder="Enter admin username" 
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="create-passkey">Pass Key</label>
-                <input 
-                  id="create-passkey"
-                  name="passkey" 
-                  className="modal-input"
-                  value={createAdmin.passkey} 
-                  onChange={e => setCreateAdmin(p => ({ ...p, passkey: e.target.value }))} 
-                  placeholder="Enter pass key" 
-                  type="password" 
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="create-confirm-passkey">Confirm Pass Key</label>
-                <input 
-                  id="create-confirm-passkey"
-                  name="confirm_passkey" 
-                  className="modal-input"
-                  value={createAdmin.confirm_passkey} 
-                  onChange={e => setCreateAdmin(p => ({ ...p, confirm_passkey: e.target.value }))} 
-                  placeholder="Confirm pass key" 
-                  type="password" 
-                />
-              </div>
-              <button type="submit" className="btn" disabled={createLoading}>
-                <FiShield />
-                {createLoading ? 'Creating...' : 'Create Admin'}
-              </button>
-              {createMsg && <div className={`message ${createMsg.includes('Failed') ? 'error' : 'success'}`}>{createMsg}</div>}
-            </form>
-          </div>
-        )}
-
-        {/* General Settings Card */}
+        {/* System Information Card */}
         <div className="settings-card">
-          <h3>General Settings</h3>
-          <form onSubmit={handleSettingsSave}>
+          <h3><FiInfo /> System Information</h3>
+          <div className="system-info-grid">
+            <div className="info-item">
+              <FiUser />
+              <div>
+                <span className="info-label">Total Members</span>
+                <span className="info-value">{systemInfo.totalMembers}</span>
+              </div>
+            </div>
+            <div className="info-item">
+              <FiShield />
+              <div>
+                <span className="info-label">Total Staff</span>
+                <span className="info-value">{systemInfo.totalStaff}</span>
+              </div>
+            </div>
+            <div className="info-item">
+              <FiBox />
+              <div>
+                <span className="info-label">Inventory Items</span>
+                <span className="info-value">{systemInfo.totalInventory}</span>
+              </div>
+            </div>
+            <div className="info-item">
+              <FiDollarSign />
+              <div>
+                <span className="info-label">Finance Records</span>
+                <span className="info-value">{systemInfo.totalFinances}</span>
+              </div>
+            </div>
+            <div className="info-item">
+              <FiDatabase />
+              <div>
+                <span className="info-label">System Version</span>
+                <span className="info-value">{systemInfo.systemVersion}</span>
+              </div>
+            </div>
+            <div className="info-item">
+              <FiClock />
+              <div>
+                <span className="info-label">Last Backup</span>
+                <span className="info-value">{systemInfo.lastBackup || 'Never'}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Admin Code Management Card */}
+        <div className="settings-card">
+          <h3><FiShield /> Admin Code Management</h3>
+          <form onSubmit={handleChangeAdmin}>
             <div className="form-group">
-              <label htmlFor="gym-name">Gym Name</label>
+              <label htmlFor="change-admin-username">Admin Username</label>
               <input 
-                id="gym-name"
-                name="gym_name" 
+                id="change-admin-username"
+                name="username" 
                 className="modal-input"
-                value={settings.gym_name} 
-                onChange={handleSettingsChange} 
-                placeholder="Enter gym name" 
+                value={changeAdmin.username} 
+                onChange={e => setChangeAdmin(p => ({ ...p, username: e.target.value }))} 
+                placeholder="Enter admin username" 
               />
             </div>
             <div className="form-group">
-              <label htmlFor="contact-email">Contact Email</label>
+              <label htmlFor="change-admin-phone">Phone Number</label>
               <input 
-                id="contact-email"
-                name="contact_email" 
+                id="change-admin-phone"
+                name="phone" 
                 className="modal-input"
-                value={settings.contact_email} 
-                onChange={handleSettingsChange} 
-                placeholder="Enter contact email" 
-                type="email" 
+                value={changeAdmin.phone} 
+                onChange={e => setChangeAdmin(p => ({ ...p, phone: e.target.value }))} 
+                placeholder="Enter registered phone number" 
+                type="tel" 
               />
             </div>
             <div className="form-group">
-              <label htmlFor="contact-phone">Contact Phone</label>
+              <label htmlFor="new-admin-code">New Admin Code</label>
               <input 
-                id="contact-phone"
-                name="contact_phone" 
+                id="new-admin-code"
+                name="new_admin_code" 
                 className="modal-input"
-                value={settings.contact_phone} 
-                onChange={handleSettingsChange} 
-                placeholder="Enter contact phone" 
+                value={changeAdmin.new_admin_code} 
+                onChange={e => setChangeAdmin(p => ({ ...p, new_admin_code: e.target.value }))} 
+                placeholder="Enter new admin code" 
+                type="password" 
               />
             </div>
             <div className="form-group">
-              <label htmlFor="opening-hours">Opening Hours</label>
-              <textarea 
-                id="opening-hours"
-                name="opening_hours" 
-                value={settings.opening_hours} 
-                onChange={handleSettingsChange} 
-                placeholder="Enter opening hours" 
-                rows="3"
+              <label htmlFor="confirm-new-admin-code">Confirm New Admin Code</label>
+              <input 
+                id="confirm-new-admin-code"
+                name="confirm_admin_code" 
+                className="modal-input"
+                value={changeAdmin.confirm_admin_code} 
+                onChange={e => setChangeAdmin(p => ({ ...p, confirm_admin_code: e.target.value }))} 
+                placeholder="Confirm new admin code" 
+                type="password" 
               />
             </div>
-            <div className="form-group checkbox-group">
-              <label>
-                <input 
-                  name="notifications_enabled" 
-                  type="checkbox" 
-                  checked={settings.notifications_enabled} 
-                  onChange={handleSettingsChange} 
-                />
-                Enable Notifications
-              </label>
-            </div>
-            <button type="submit" className="btn" disabled={loading}>
-              <FiSave />
-              {loading ? 'Loading...' : 'Save Settings'}
+            <button type="submit" className="btn" disabled={changeAdminLoading}>
+              <FiShield />
+              {changeAdminLoading ? 'Saving...' : 'Change Admin Code'}
             </button>
-            {saveMsg && <div className={`message ${saveMsg.includes('Failed') ? 'error' : 'success'}`}>{saveMsg}</div>}
+            <button type="button" className="btn btn-danger" onClick={() => setShowResetAdmin(true)}>
+              <FiTrash2 />
+              Reset Admin
+            </button>
+            {changeAdminMsg && <div className={`message ${changeAdminMsg.includes('Failed') || changeAdminMsg.includes('incorrect') ? 'error' : 'success'}`}>{changeAdminMsg}</div>}
           </form>
+        </div>
+
+        {/* Staff Code Management Card */}
+        <div className="settings-card">
+          <h3><FiUsers /> Staff Code Management</h3>
+          <form onSubmit={handleChangeStaffCode}>
+            <div className="form-group">
+              <label htmlFor="staff-select">Select Staff Member</label>
+              <select 
+                id="staff-select"
+                value={selectedStaff}
+                onChange={(e) => setSelectedStaff(e.target.value)}
+                className="modal-input"
+              >
+                <option value="">Choose a staff member...</option>
+                {staffList.map(staff => (
+                  <option key={staff.id} value={staff.id}>
+                    {staff.name} - {staff.role}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="form-group">
+              <label htmlFor="new-staff-code">New Staff Code</label>
+              <input 
+                id="new-staff-code"
+                type="password"
+                value={newStaffCode}
+                onChange={(e) => setNewStaffCode(e.target.value)}
+                className="modal-input"
+                placeholder="Enter new staff code"
+              />
+            </div>
+            <div className="form-group">
+              <label htmlFor="confirm-staff-code">Confirm Staff Code</label>
+              <input 
+                id="confirm-staff-code"
+                type="password"
+                value={confirmStaffCode}
+                onChange={(e) => setConfirmStaffCode(e.target.value)}
+                className="modal-input"
+                placeholder="Confirm new staff code"
+              />
+            </div>
+            <button type="submit" className="btn" disabled={staffCodeLoading}>
+              <FiUsers />
+              {staffCodeLoading ? 'Saving...' : 'Change Staff Code'}
+            </button>
+            {staffCodeMsg && <div className={`message ${staffCodeMsg.includes('Failed') ? 'error' : 'success'}`}>{staffCodeMsg}</div>}
+          </form>
+        </div>
+
+        {/* Inventory Settings Card */}
+        <div className="settings-card">
+          <h3><FiBox /> Inventory Settings</h3>
+          <div className="form-group">
+            <label htmlFor="low-stock-threshold">Low Stock Threshold</label>
+            <div className="input-with-button">
+              <input 
+                id="low-stock-threshold"
+                type="number"
+                min="1"
+                max="100"
+                value={lowStockThreshold}
+                onChange={(e) => setLowStockThreshold(parseInt(e.target.value) || 5)}
+                className="modal-input"
+                placeholder="Enter threshold (e.g., 5)"
+              />
+              <button 
+                type="button" 
+                className="btn btn-secondary" 
+                onClick={handleThresholdSave}
+              >
+                <FiSave />
+                Save
+              </button>
+            </div>
+            <small>Items with stock below this number will be marked as low stock.</small>
+            {thresholdMsg && <div className={`message ${thresholdMsg.includes('Failed') ? 'error' : 'success'}`}>{thresholdMsg}</div>}
+          </div>
+        </div>
+
+        {/* Financial Settings Card */}
+        <div className="settings-card">
+          <h3><FiDollarSign /> Financial Settings</h3>
+          <div className="form-group">
+            <label htmlFor="expense-limit">Monthly Expense Limit (₹)</label>
+            <div className="input-with-button">
+              <input 
+                id="expense-limit"
+                type="number"
+                min="0"
+                value={expenseLimit}
+                onChange={(e) => setExpenseLimit(parseInt(e.target.value) || 0)}
+                className="modal-input"
+                placeholder="Enter monthly expense limit"
+              />
+              <button 
+                type="button" 
+                className="btn btn-secondary" 
+                onClick={handleExpenseLimitSave}
+              >
+                <FiSave />
+                Save
+              </button>
+            </div>
+            <small>Set a monthly expense limit to receive alerts when exceeded.</small>
+            {expenseLimitMsg && <div className={`message ${expenseLimitMsg.includes('Failed') ? 'error' : 'success'}`}>{expenseLimitMsg}</div>}
+          </div>
+        </div>
+
+        {/* Dashboard Settings Card */}
+        <div className="settings-card">
+          <h3><FiGrid /> Dashboard Settings</h3>
+          <div className="form-group">
+            <label>Dashboard Layout</label>
+            <div className="button-group">
+              <button 
+                type="button" 
+                className="btn btn-secondary" 
+                onClick={handleLayoutReset}
+              >
+                <FiRefreshCw />
+                Reset to Default
+              </button>
+            </div>
+            <small>Reset dashboard layout to default configuration.</small>
+            {layoutResetMsg && <div className={`message ${layoutResetMsg.includes('Failed') ? 'error' : 'success'}`}>{layoutResetMsg}</div>}
+          </div>
+        </div>
+
+        {/* Terms and Agreement Card */}
+        <div className="settings-card">
+          <h3><FiFileText /> Terms and Agreement</h3>
+          <div className="form-group">
+            <label>Contract & Terms</label>
+            <div className="button-group">
+              <button 
+                type="button" 
+                className="btn btn-secondary" 
+                onClick={() => setShowTermsModal(true)}
+              >
+                <FiFileText />
+                View Terms & Agreement
+              </button>
+            </div>
+            <small>View the contract and terms between the gym and our service.</small>
+          </div>
         </div>
 
         {/* Contact Information Card */}
         <div className="settings-card">
-          <h3>Contact Information</h3>
+          <h3><FiMail /> Contact Information</h3>
           <div className="contact-info-section">
             <a 
               href="https://www.instagram.com/solsparrow.co?igsh=OTR4cjNld3Zvdms4" 
@@ -356,139 +534,14 @@ const Settings = () => {
             </div>
           </div>
         </div>
-
-        {/* Admin Pass Key Change Card */}
-        {adminExists && (
-          <div className="settings-card">
-            <h3>Admin Pass Key</h3>
-            <form onSubmit={handleChangePass}>
-              <div className="form-group">
-                <label htmlFor="change-username">Admin Username</label>
-                <input 
-                  id="change-username"
-                  name="username" 
-                  className="modal-input"
-                  value={changePass.username} 
-                  onChange={e => setChangePass(p => ({ ...p, username: e.target.value }))} 
-                  placeholder="Enter admin username" 
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="old-passkey">Old Pass Key</label>
-                <input 
-                  id="old-passkey"
-                  name="old_passkey" 
-                  className="modal-input"
-                  value={changePass.old_passkey} 
-                  onChange={e => setChangePass(p => ({ ...p, old_passkey: e.target.value }))} 
-                  placeholder="Enter old pass key" 
-                  type="password" 
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="new-passkey">New Pass Key</label>
-                <input 
-                  id="new-passkey"
-                  name="new_passkey" 
-                  className="modal-input"
-                  value={changePass.new_passkey} 
-                  onChange={e => setChangePass(p => ({ ...p, new_passkey: e.target.value }))} 
-                  placeholder="Enter new pass key" 
-                  type="password" 
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="confirm-new-passkey">Confirm New Pass Key</label>
-                <input 
-                  id="confirm-new-passkey"
-                  name="confirm_passkey" 
-                  className="modal-input"
-                  value={changePass.confirm_passkey} 
-                  onChange={e => setChangePass(p => ({ ...p, confirm_passkey: e.target.value }))} 
-                  placeholder="Confirm new pass key" 
-                  type="password" 
-                />
-              </div>
-              <button type="submit" className="btn" disabled={changeLoading}>
-                <FiShield />
-                {changeLoading ? 'Saving...' : 'Change Pass Key'}
-              </button>
-              <button type="button" className="btn btn-secondary" onClick={() => setShowReset(true)}>
-                <FiShield />
-                Reset Pass Key
-              </button>
-              <button type="button" className="btn btn-danger" onClick={() => setShowResetAdmin(true)}>
-                <FiTrash2 />
-                Reset Admin
-              </button>
-              {changeMsg && <div className={`message ${changeMsg.includes('Failed') || changeMsg.includes('incorrect') ? 'error' : 'success'}`}>{changeMsg}</div>}
-            </form>
-          </div>
-        )}
       </div>
-
-      {/* Reset Passkey Modal */}
-      {showReset && (
-        <div className="modal-overlay">
-          <div className="modal">
-            <h3>Reset Pass Key</h3>
-            <p className="warning-text">⚠️ This will reset the admin passkey without requiring the old passkey. Use with caution!</p>
-            <form onSubmit={handleReset}>
-              <div className="form-group">
-                <label htmlFor="reset-username">Admin Username</label>
-                <input 
-                  id="reset-username"
-                  name="username" 
-                  className="modal-input"
-                  value={resetData.username} 
-                  onChange={e => setResetData(p => ({ ...p, username: e.target.value }))} 
-                  placeholder="Enter admin username" 
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="reset-new-passkey">New Pass Key</label>
-                <input 
-                  id="reset-new-passkey"
-                  name="new_passkey" 
-                  className="modal-input"
-                  value={resetData.new_passkey} 
-                  onChange={e => setResetData(p => ({ ...p, new_passkey: e.target.value }))} 
-                  placeholder="Enter new pass key" 
-                  type="password" 
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="reset-confirm-passkey">Confirm New Pass Key</label>
-                <input 
-                  id="reset-confirm-passkey"
-                  name="confirm_passkey" 
-                  className="modal-input"
-                  value={resetData.confirm_passkey} 
-                  onChange={e => setResetData(p => ({ ...p, confirm_passkey: e.target.value }))} 
-                  placeholder="Confirm new pass key" 
-                  type="password" 
-                />
-              </div>
-              <button type="submit" className="btn" disabled={resetLoading}>
-                <FiShield />
-                {resetLoading ? 'Saving...' : 'Reset Pass Key'}
-              </button>
-              <button type="button" className="btn btn-secondary" onClick={() => setShowReset(false)}>
-                Cancel
-              </button>
-              {resetMsg && <div className={`message ${resetMsg.includes('Failed') ? 'error' : 'success'}`}>{resetMsg}</div>}
-            </form>
-          </div>
-        </div>
-      )}
 
       {/* Reset Admin Modal */}
       {showResetAdmin && (
         <div className="modal-overlay">
           <div className="modal">
-            <h3>Reset Admin</h3>
-            <p className="danger-text">🚨 DANGER: This will completely delete the existing admin account. You will need to create a new admin to access the system again!</p>
-            <p className="warning-text">⚠️ Please enter your current admin credentials to confirm this action.</p>
+            <h3><FiAlertTriangle /> Reset Admin</h3>
+            <p className="danger-text">🚨 This will completely reset the admin account. All admin access will be lost and you'll need to create a new admin account.</p>
             <form onSubmit={handleResetAdmin}>
               <div className="form-group">
                 <label htmlFor="reset-admin-username">Admin Username</label>
@@ -499,51 +552,41 @@ const Settings = () => {
                   value={resetAdminData.username} 
                   onChange={e => setResetAdminData(p => ({ ...p, username: e.target.value }))} 
                   placeholder="Enter admin username" 
-                  required
                 />
               </div>
               <div className="form-group">
-                <label htmlFor="reset-admin-passkey">Admin Passkey</label>
+                <label htmlFor="reset-admin-code">Admin Code</label>
                 <input 
-                  id="reset-admin-passkey"
-                  name="passkey" 
+                  id="reset-admin-code"
+                  name="admin_code" 
                   className="modal-input"
-                  value={resetAdminData.passkey} 
-                  onChange={e => setResetAdminData(p => ({ ...p, passkey: e.target.value }))} 
-                  placeholder="Enter admin passkey" 
-                  type="password"
-                  required
+                  value={resetAdminData.admin_code} 
+                  onChange={e => setResetAdminData(p => ({ ...p, admin_code: e.target.value }))} 
+                  placeholder="Enter admin code" 
+                  type="password" 
                 />
               </div>
-              <div className="modal-actions">
-                <button 
-                  type="submit" 
-                  className="btn btn-danger" 
-                  disabled={resetAdminLoading}
-                >
-                  <FiTrash2 />
-                  {resetAdminLoading ? 'Verifying...' : 'Reset Admin'}
-                </button>
-                <button 
-                  type="button" 
-                  className="btn btn-secondary" 
-                  onClick={() => {
-                    setShowResetAdmin(false);
-                    setResetAdminData({ username: '', passkey: '' });
-                    setResetAdminMsg('');
-                  }}
-                  disabled={resetAdminLoading}
-                >
-                  Cancel
-                </button>
-              </div>
+              <button type="submit" className="btn btn-danger" disabled={resetAdminLoading}>
+                <FiTrash2 />
+                {resetAdminLoading ? 'Resetting...' : 'Reset Admin'}
+              </button>
+              <button type="button" className="btn btn-secondary" onClick={() => setShowResetAdmin(false)}>
+                Cancel
+              </button>
               {resetAdminMsg && <div className={`message ${resetAdminMsg.includes('Failed') || resetAdminMsg.includes('Invalid') ? 'error' : 'success'}`}>{resetAdminMsg}</div>}
             </form>
           </div>
         </div>
       )}
+
+      {/* Terms and Agreement Modal */}
+      <TermsAgreementModal 
+        show={showTermsModal}
+        onClose={() => setShowTermsModal(false)}
+        title="Terms and Agreement"
+      />
     </div>
   );
 };
 
-export default Settings; 
+export default Settings;

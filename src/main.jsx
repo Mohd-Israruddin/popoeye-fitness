@@ -4,15 +4,15 @@ import App from './App.jsx';
 import './index.css';
 import { AuthProvider } from './data/AuthContext.jsx';
 import { FinanceProvider } from './data/FinanceContext.jsx';
-import { ThemeProvider } from './data/ThemeContext.jsx';
+// import { ThemeProvider } from './data/ThemeContext.jsx';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <AuthProvider>
       <FinanceProvider>
-        <ThemeProvider>
+        {/* <ThemeProvider> */}
           <App />
-        </ThemeProvider>
+        {/* </ThemeProvider> */}
       </FinanceProvider>
     </AuthProvider>
   </React.StrictMode>,

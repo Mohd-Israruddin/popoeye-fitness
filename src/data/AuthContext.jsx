@@ -1,36 +1,47 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
+import axios from "axios";
 
 const AuthContext = createContext();
 
-export const AuthProvider = ({ children }) => {
-  const [isAdmin, setIsAdmin] = useState(false);
+export function AuthProvider({ children }) {
+  const [user, setUser] = useState(null);
+  const [token, setToken] = useState(null);
 
-  // Optional: Persist admin status in localStorage so page refresh keeps it
   useEffect(() => {
-    const savedAdmin = localStorage.getItem("isAdmin");
-    if (savedAdmin === "true") setIsAdmin(true);
+    // On mount, check localStorage for token/user
+    const stored = localStorage.getItem("auth");
+    if (stored) {
+      const { user, token } = JSON.parse(stored);
+      setUser(user);
+      setToken(token);
+      axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+    }
   }, []);
 
-  const verifyPasskey = (passkey) => {
-    const secret = "1234"; // Your secret key
-    if (passkey === secret) {
-      setIsAdmin(true);
-      localStorage.setItem("isAdmin", "true");
-      return true;
-    }
-    return false;
+  const login = (user, token) => {
+    setUser(user);
+    setToken(token);
+    localStorage.setItem("auth", JSON.stringify({ user, token }));
+    axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
   };
 
-  const logoutAdmin = () => {
-    setIsAdmin(false);
-    localStorage.removeItem("isAdmin");
+  const logout = () => {
+    setUser(null);
+    setToken(null);
+    localStorage.removeItem("auth");
+    delete axios.defaults.headers.common["Authorization"];
   };
+
+  const isAdmin = user && user.role === "admin";
+  const isStaff = user && user.role === "staff";
 
   return (
-    <AuthContext.Provider value={{ isAdmin, verifyPasskey, logoutAdmin }}>
+    <AuthContext.Provider value={{ user, token, login, logout, isAdmin, isStaff }}>
       {children}
     </AuthContext.Provider>
   );
-};
+}
 
-export const useAuth = () => useContext(AuthContext);
+export function useAuth() {
+  return useContext(AuthContext);
+}

@@ -28,16 +28,18 @@ const StaffCard = ({ staffMember, onSelect, onEdit, onDelete, isWidget }) => {
             </div>
           </>
         )}
-        <div className="staff-info-item">
-          <FaMoneyBillWave />
-          <span>Salary: ₹{staffMember.salary}</span>
-        </div>
+        {!isWidget && (
+          <div className="staff-info-item">
+            <FaMoneyBillWave />
+            <span>Salary: ₹{staffMember.salary}</span>
+          </div>
+        )}
       </div>
       {!isWidget && (
          <div className="staff-card-footer">
             <button className="edit-button" onClick={(e) => {
                 e.stopPropagation();
-                onEdit(staffMember);
+                onEdit(staffMember.id);
             }}>
                 <FaEdit /> Edit
             </button>

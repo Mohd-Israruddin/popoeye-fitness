@@ -1,13 +1,13 @@
 import React from 'react';
-import { FaPhone, FaEnvelope, FaMapMarkerAlt, FaTimes, FaMoneyBillWave, FaCheckCircle, FaExclamationCircle } from 'react-icons/fa';
+import { FaPhone, FaEnvelope, FaMapMarkerAlt, FaTimes, FaMoneyBillWave, FaCheckCircle, FaExclamationCircle, FaEdit } from 'react-icons/fa';
 
-const StaffDetailModal = ({ staff, onClose, onMarkSalaryPaid }) => {
+const StaffDetailModal = ({ staff, onClose, onEdit, onMarkSalaryPaid }) => {
   const salaryStatusPaid = staff.salary_status === 'Paid';
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <button className="close-btn" onClick={onClose}><FaTimes /></button>
+    <div className="staff-modal-overlay" onClick={onClose}>
+      <div className="staff-modal" onClick={(e) => e.stopPropagation()}>
+        <button className="staff-modal-close-btn" onClick={onClose}><FaTimes /></button>
         <img src={staff.photo || 'https://placehold.co/150'} alt={staff.name} className="modal-img" />
         <h2 id="modal-title">{staff.name}</h2>
         <p className="modal-role">{staff.role}</p>
@@ -27,9 +27,15 @@ const StaffDetailModal = ({ staff, onClose, onMarkSalaryPaid }) => {
           </div>
         </div>
 
-        <div className="modal-actions">
+        <div className="staff-modal-actions">
           <button 
-            className={`btn ${salaryStatusPaid ? 'btn-secondary' : 'btn-primary'}`}
+            className="staff-modal-btn"
+            onClick={() => onEdit && onEdit()}
+          >
+            <FaEdit /> Edit Staff
+          </button>
+          <button 
+            className={`staff-modal-btn ${salaryStatusPaid ? 'staff-modal-btn-secondary' : ''}`}
             onClick={() => onMarkSalaryPaid(staff.id, salaryStatusPaid ? 'Pending' : 'Paid')}
             disabled={salaryStatusPaid}
           >

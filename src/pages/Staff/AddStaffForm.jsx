@@ -4,27 +4,27 @@ import { FaUser, FaBriefcase, FaPhone, FaEnvelope, FaMapMarkerAlt, FaMoneyBillWa
 
 const AddStaffForm = ({ onSave, onCancel, staff }) => {
   const [formData, setFormData] = useState(
-    staff || {
-      name: "",
-      role: "Trainer",
-      phone: "",
-      email: "",
-      address: "",
-      photo: "",
-      status: "Active",
-      salary: "",
-    }
+          staff || {
+        name: "",
+        staff_code: "",
+        role: "Trainer",
+        phone: "",
+        email: "",
+        address: "",
+        status: "Active",
+        salary: "",
+      }
   );
 
   useEffect(() => {
     if (staff) {
       setFormData({
         name: staff.name || "",
+        staff_code: staff.staff_code || "",
         role: staff.role || "Trainer",
         phone: staff.phone || "",
         email: staff.email || "",
         address: staff.address || "",
-        photo: staff.photo || "",
         status: staff.status || "Active",
         salary: staff.salary || "",
       });
@@ -42,9 +42,9 @@ const AddStaffForm = ({ onSave, onCancel, staff }) => {
     console.log('Form validation - name:', formData.name, 'phone:', formData.phone, 'role:', formData.role);
     
     // Check if required fields are filled
-    if (!formData.name || !formData.phone || !formData.role) {
-      console.error('Required fields missing:', { name: formData.name, phone: formData.phone, role: formData.role });
-      alert('Please fill in all required fields (Name, Phone, Role)');
+    if (!formData.name || !formData.phone || !formData.role || !formData.staff_code) {
+      console.error('Required fields missing:', { name: formData.name, phone: formData.phone, role: formData.role, staff_code: formData.staff_code });
+      alert('Please fill in all required fields (Name, Phone, Role, Staff Code)');
       return;
     }
     
@@ -60,6 +60,10 @@ const AddStaffForm = ({ onSave, onCancel, staff }) => {
           <div className="staff-form-group">
             <label htmlFor="name">Name</label>
             <input id="name" name="name" value={formData.name} onChange={handleChange} placeholder="Enter full name" required />
+          </div>
+          <div className="staff-form-group">
+            <label htmlFor="staff_code">Staff Code</label>
+            <input id="staff_code" name="staff_code" value={formData.staff_code} onChange={handleChange} placeholder="Enter unique staff code" required />
           </div>
           <div className="staff-form-group">
             <label htmlFor="role">Role</label>
@@ -82,10 +86,7 @@ const AddStaffForm = ({ onSave, onCancel, staff }) => {
             <label htmlFor="address">Address</label>
             <input id="address" name="address" value={formData.address} onChange={handleChange} placeholder="Enter address" />
           </div>
-          <div className="staff-form-group">
-            <label htmlFor="photo">Photo URL</label>
-            <input id="photo" name="photo" value={formData.photo} onChange={handleChange} placeholder="Enter photo URL" />
-          </div>
+
           <div className="staff-form-group">
             <label htmlFor="salary">Salary</label>
             <input id="salary" name="salary" type="number" value={formData.salary} onChange={handleChange} placeholder="Enter monthly salary" />
@@ -100,10 +101,10 @@ const AddStaffForm = ({ onSave, onCancel, staff }) => {
           </div>
         </div>
         <div className="staff-form-actions">
-          <button type="submit" className="btn btn-primary">
+          <button type="submit" className="staff-add-form-btn">
             {staff ? 'Save Changes' : 'Add Staff'}
           </button>
-          <button type="button" className="btn btn-secondary" onClick={onCancel}>
+          <button type="button" className="staff-add-form-btn-secondary" onClick={onCancel}>
             Cancel
           </button>
         </div>

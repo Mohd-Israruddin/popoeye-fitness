@@ -1,0 +1,172 @@
+/* BodyMeasurementsForm.css - Modern Form Styling */
+
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+
+:root {
+  --primary: #28B295;
+  --background: #1C1C1E;
+  --text: #E3E3E0;
+  --accent1: #D6F84C;
+  --accent2: #FF715B;
+  --surface: #23272f;
+  --border: #3A3A3C;
+}
+
+/* Modal Overlay */
+.members-measurements-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+/* Modal Container */
+.members-measurements-modal {
+  background: var(--surface);
+  border-radius: 16px;
+  padding: 2rem;
+  max-width: 600px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--border);
+  font-family: 'Poppins', sans-serif;
+}
+
+/* Form Title */
+.members-measurements-title {
+  color: var(--primary);
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+/* Form Grid */
+.members-measurements-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+/* Form Groups */
+.members-measurements-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.members-measurements-group label {
+  color: var(--text);
+  font-weight: 600;
+  font-size: 0.95rem;
+  margin-bottom: 0.25rem;
+}
+
+/* Form Inputs */
+.members-measurements-input {
+  background: var(--background);
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  padding: 0.875rem 1rem;
+  color: var(--text);
+  font-size: 1rem;
+  font-family: 'Poppins', sans-serif;
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+.members-measurements-input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(40, 178, 149, 0.1);
+}
+
+.members-measurements-input::placeholder {
+  color: #888;
+  opacity: 0.7;
+}
+
+/* Form Buttons */
+.members-measurements-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+}
+
+.members-measurements-btn {
+  padding: 0.875rem 2rem;
+  border: none;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 1rem;
+  font-family: 'Poppins', sans-serif;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 140px;
+}
+
+.members-measurements-btn-primary {
+  background: var(--primary);
+  color: var(--background);
+}
+
+.members-measurements-btn-primary:hover {
+  background: #23a484;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(40, 178, 149, 0.3);
+}
+
+.members-measurements-btn-secondary {
+  background: transparent;
+  color: var(--text);
+  border: 2px solid var(--border);
+}
+
+.members-measurements-btn-secondary:hover {
+  background: var(--border);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .members-measurements-modal {
+    padding: 1.5rem;
+    margin: 1rem;
+  }
+  
+  .members-measurements-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .members-measurements-buttons {
+    flex-direction: column;
+  }
+  
+  .members-measurements-btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .members-measurements-modal {
+    padding: 1rem;
+  }
+  
+  .members-measurements-title {
+    font-size: 1.4rem;
+  }
+} 

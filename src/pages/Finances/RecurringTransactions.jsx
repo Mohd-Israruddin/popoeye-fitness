@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import api from "../../service/api";
 import {
   FaPlus,
   FaEdit,
@@ -13,6 +13,7 @@ import {
   FaPause
 } from "react-icons/fa";
 import "./RecurringTransactions.css";
+import AdminPasskeyModal from '../../assets/components/AdminPasskeyModal';
 
 const RecurringTransactions = () => {
   const [transactions, setTransactions] = useState([]);
@@ -22,6 +23,8 @@ const RecurringTransactions = () => {
   const [loading, setLoading] = useState(false);
   const [processingId, setProcessingId] = useState(null);
   const [message, setMessage] = useState("");
+  const [showPasskeyModal, setShowPasskeyModal] = useState(false);
+  const [pendingDeleteId, setPendingDeleteId] = useState(null);
 
   const [form, setForm] = useState({
     name: "",
@@ -60,7 +63,7 @@ const RecurringTransactions = () => {
   const fetchTransactions = async () => {
     try {
       setLoading(true);
-      const response = await axios.get("https://solsparrow-backend.onrender.com/api/recurring");
+      const response = await api.get("/recurring");
       setTransactions(response.data);
     } catch (error) {
       setMessage("Failed to fetch recurring transactions");
@@ -71,7 +74,7 @@ const RecurringTransactions = () => {
 
   const fetchStaff = async () => {
     try {
-      const response = await axios.get("https://solsparrow-backend.onrender.com/api/staff");
+      const response = await api.get("/staff");
       setStaff(response.data);
     } catch (error) {
       console.error("Failed to fetch staff:", error);
@@ -85,10 +88,10 @@ const RecurringTransactions = () => {
       setMessage("");
 
       if (editingId) {
-        await axios.put(`https://solsparrow-backend.onrender.com/api/recurring/${editingId}`, form);
+        await api.put(`/recurring/${editingId}`, form);
         setMessage("Recurring transaction updated successfully!");
       } else {
-        await axios.post("https://solsparrow-backend.onrender.com/api/recurring", form);
+        await api.post("/recurring", form);
         setMessage("Recurring transaction created successfully!");
       }
 
@@ -118,24 +121,25 @@ const RecurringTransactions = () => {
     setShowForm(true);
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this recurring transaction?")) {
-      return;
-    }
+  const handleDeleteClick = (id) => {
+    setPendingDeleteId(id);
+    setShowPasskeyModal(true);
+  };
 
+  const handlePasskeySuccess = async ({ code }) => {
     try {
-      await axios.delete(`https://solsparrow-backend.onrender.com/api/recurring/${id}`);
-      setMessage("Recurring transaction deleted successfully!");
+      await api.delete(`/recurring/${pendingDeleteId}`, { data: { admin_code: code } });
       fetchTransactions();
-    } catch (error) {
-      setMessage("Failed to delete recurring transaction");
+      setPendingDeleteId(null);
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to delete.');
     }
   };
 
   const handleToggleActive = async (id, isActive) => {
     try {
       const transaction = transactions.find(t => t.id === id);
-      await axios.put(`https://solsparrow-backend.onrender.com/api/recurring/${id}`, {
+      await api.put(`/recurring/${id}`, {
         ...transaction,
         is_active: !isActive
       });
@@ -148,7 +152,7 @@ const RecurringTransactions = () => {
   const handleProcessOne = async (id) => {
     setProcessingId(id);
     try {
-      const res = await axios.post(`https://solsparrow-backend.onrender.com/api/recurring/process/${id}`);
+      const res = await api.post(`/recurring/process/${id}`);
       setMessage(res.data.message);
       fetchTransactions();
     } catch (err) {
@@ -161,7 +165,7 @@ const RecurringTransactions = () => {
   const handleProcessNow = async () => {
     try {
       setLoading(true);
-      const response = await axios.post("https://solsparrow-backend.onrender.com/api/recurring/process-due");
+      const response = await api.post("/recurring/process-due");
       setMessage(response.data.message);
       fetchTransactions();
     } catch (error) {
@@ -418,7 +422,7 @@ const RecurringTransactions = () => {
                   <FaEdit />
                 </button>
                 <button
-                  onClick={() => handleDelete(transaction.id)}
+                  onClick={() => handleDeleteClick(transaction.id)}
                   className="delete-btn"
                   title="Delete"
                 >
@@ -475,6 +479,8 @@ const RecurringTransactions = () => {
           </div>
         ))}
       </div>
+
+      <AdminPasskeyModal isOpen={showPasskeyModal} onClose={() => setShowPasskeyModal(false)} onSuccess={handlePasskeySuccess} />
     </div>
   );
 };

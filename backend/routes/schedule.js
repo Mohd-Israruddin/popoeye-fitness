@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const db = require("../db");
+const bcrypt = require("bcryptjs");
 
 // GET all bookings, grouped as { "Mon-6:00 AM": [...] }
 router.get("/", async (req, res) => {
@@ -71,6 +72,15 @@ router.put("/:id", async (req, res) => {
   }
 });
 
+// Helper to verify admin passkey
+async function verifyAdminPasskey(username, passkey) {
+  const [rows] = await db.query('SELECT * FROM admin WHERE username = ?', [username]);
+  const admin = rows[0];
+  if (!admin) return false;
+  const match = await bcrypt.compare(passkey, admin.passkey_hash);
+  return match;
+}
+
 // DELETE individual booking
 router.delete("/:id", async (req, res) => {
   const { id } = req.params;
@@ -81,6 +91,7 @@ router.delete("/:id", async (req, res) => {
     }
     res.json({ success: true });
   } catch (err) {
+    console.error('Error deleting booking:', err);
     return res.status(500).json({ error: err.message });
   }
 });
@@ -91,6 +102,7 @@ router.delete("/", async (req, res) => {
     const [result] = await db.query("DELETE FROM schedule");
     res.json({ success: true, deleted: result.affectedRows });
   } catch (err) {
+    console.error('Error resetting schedule:', err);
     return res.status(500).json({ error: err.message });
   }
 });

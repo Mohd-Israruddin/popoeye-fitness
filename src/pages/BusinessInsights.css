@@ -2,13 +2,30 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
 
+/* General Page Layout */
 .insights-container {
-  padding: 2rem;
-  background-color: #1C1C1E;
+  background: #1C1C1E;
   color: #E3E3E0;
+  min-height: 100vh;
   font-family: 'Poppins', sans-serif;
-  width: 100%;
+  padding: 1.5rem 1.5rem 2rem 1.5rem;
+  margin-left: 0;
   box-sizing: border-box;
+}
+
+/* Responsive adjustments for sidebar gap */
+@media (min-width: 768px) {
+  .insights-container {
+    margin-left: 50px; /* Reduced from 250px to just 50px */
+    padding: 1.5rem 1.5rem 2rem 1.5rem;
+  }
+}
+
+@media (max-width: 767px) {
+  .insights-container {
+    margin-left: 0;
+    padding: 1rem 1rem 2rem 1rem;
+  }
 }
 
 .loading-spinner {
@@ -22,113 +39,121 @@
 
 /* Hero Section */
 .insights-container .hero-section {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  padding: 3rem 2rem;
-  background: linear-gradient(135deg, #28B295 0%, #2A2A2C 100%);
+  background: linear-gradient(135deg, #23272f 0%, #23272f 100%);
+  border: none;
+  box-shadow: none;
+  margin-bottom: 2.5rem;
   border-radius: 20px;
-  margin-bottom: 2rem;
-  border: 2px solid #D6F84C;
-  box-shadow: 0 10px 30px rgba(40, 178, 149, 0.2);
+  padding: 2.5rem 2rem;
 }
 
 .insights-container .hero-section h1 {
-  font-size: 3rem;
+  color: #28B295;
+  font-size: 2.5rem;
+  margin-bottom: 0;
   font-weight: 800;
-  margin: 0 0 0.5rem 0;
-  color: #D6F84C;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .insights-container .hero-section p {
-  font-size: 1.2rem;
-  margin: 0;
-  color: #E3E3E0;
-  opacity: 0.9;
-  max-width: 600px;
+  color: #b0b3b8;
+  font-weight: 500;
+  margin-bottom: 8px;
 }
 
 /* Stats Grid */
 .stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1.5rem;
-  margin-bottom: 2rem;
+  display: flex;
+  gap: 2rem;
+  margin: 0 0 2.5rem 0;
+  justify-content: space-between;
 }
 
 .stat-card {
-  background: linear-gradient(135deg, #2A2A2C 0%, #1C1C1E 100%);
-  padding: 1.5rem;
-  border-radius: 16px;
-  border-left: 5px solid;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  flex: 1 1 0;
+  background: #23272f;
+  border: none;
+  box-shadow: 0 2px 12px #0004;
+  border-radius: 14px;
   display: flex;
   align-items: center;
-  gap: 1.5rem;
+  padding: 1.5rem 1rem;
+  min-width: 0;
+  transition: box-shadow 0.2s, background 0.2s, color 0.2s;
+  min-height: 120px;
+  max-height: 140px;
 }
 
 .stat-card:hover {
-  transform: translateY(-5px) scale(1.03);
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 20px #0006;
 }
 
 .stat-card .stat-icon {
-  font-size: 2.5rem;
-  padding: 1rem;
+  background: #28B295;
+  color: #fff;
+  font-size: 1.05rem;
   border-radius: 50%;
+  padding: 0.45rem;
+  margin-right: 0.5rem;
+  min-width: 1.7rem;
+  min-height: 1.7rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #1C1C1E;
 }
 
 .stat-card .stat-content h3 {
-  margin: 0 0 0.25rem 0;
   font-size: 2rem;
   font-weight: 700;
   color: #fff;
+  letter-spacing: 1px;
+  display: block;
+  margin: 0;
 }
 
 .stat-card .stat-content p {
-  margin: 0;
-  font-size: 1rem;
-  color: #E3E3E0;
-  opacity: 0.8;
+  color: #b0b3b8;
+  font-weight: 600;
+  margin-bottom: 1px;
+  font-size: 1.1rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Color Themes for Stat Cards */
-.stat-card.total-members { border-color: #2196f3; }
+.stat-card.total-members { border-left: none !important; }
 .stat-card.total-members .stat-icon { background: #2196f3; }
 
-.stat-card.revenue { border-color: #28B295; }
+.stat-card.revenue { border-left: none !important; }
 .stat-card.revenue .stat-icon { background: #28B295; }
 
-.stat-card.expense { border-color: #FF715B; }
+.stat-card.expense { border-left: none !important; }
 .stat-card.expense .stat-icon { background: #FF715B; }
 
-.stat-card.profit { border-color: #D6F84C; }
+.stat-card.profit { border-left: none !important; }
 .stat-card.profit .stat-icon { background: #D6F84C; }
 
 /* Chart Styles */
 .charts-grid {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: repeat(2, 1fr);
   gap: 2rem;
   margin-bottom: 2rem;
 }
 
 .chart-container {
-  background: #2A2A2C;
+  background: #23272f;
   padding: 2rem;
   border-radius: 16px;
-  box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+  box-shadow: 0 2px 12px #0004;
   height: 450px;
+  min-width: 0;
+  width: 100%;
   display: flex;
   flex-direction: column;
   position: relative;
+  border: none;
+  overflow: hidden;
 }
 
 .chart-container.side-chart {
@@ -141,23 +166,51 @@
   text-align: center;
   margin-bottom: 1.5rem;
   font-size: 1.5rem;
-  color: #D6F84C;
+  color: #28B295;
+  font-weight: 700;
 }
 
 .pie-chart-wrapper {
   position: relative;
-  width: 70%;
+  width: 100%;
+  min-width: 0;
   height: 100%;
-  margin: 0 auto;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
+/* Main chart containers: taller and flexible */
 .chart-container.main-chart {
-  height: 500px;
+  height: 600px;
+  min-height: 400px;
+  max-height: 90vh;
+  width: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
-.chart-container canvas {
-  height: 100% !important;
+.chart-container.main-chart .chart-wrapper {
+  height: 100%;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: visible;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chart-container.main-chart canvas {
   width: 100% !important;
+  height: 100% !important;
+  min-width: 0;
+  min-height: 0;
+  display: block;
+  overflow: visible;
 }
 
 /* Responsive Grid for Charts */
@@ -171,20 +224,86 @@
   }
 }
 
+@media (max-width: 1200px) {
+  .charts-grid {
+    grid-template-columns: 1fr;
+  }
+  .chart-container {
+    height: 400px;
+  }
+  .chart-container.main-chart {
+    height: 450px;
+    min-height: 320px;
+  }
+}
+
+@media (max-width: 900px) {
+  .stats-grid {
+    flex-direction: column;
+    gap: 1rem;
+  }
+}
+@media (max-width: 600px) {
+  .stats-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  .stat-card {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    margin-bottom: 0;
+    box-sizing: border-box;
+    display: flex;
+  }
+  .charts-grid {
+    grid-template-columns: 1fr;
+    gap: 1.2rem;
+  }
+  .chart-container {
+    height: 420px;
+    min-height: 320px;
+    padding: 1rem;
+    min-width: 0;
+    width: 100%;
+  }
+  .pie-chart-wrapper {
+    height: 320px;
+    min-height: 220px;
+    width: 100%;
+    max-width: 100vw;
+  }
+  .expense-limiter-card .limiter-input {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.7rem;
+  }
+  .expense-limiter-card .limiter-input input,
+  .expense-limiter-card .limiter-input button {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+}
+
 /* Financial Metrics Card */
 .financial-metrics-card {
-  background: #2A2A2C;
+  background: #23272f;
   padding: 2rem;
   border-radius: 16px;
   margin-bottom: 2rem;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 2px 12px #0004;
+  border: none;
 }
 
 .financial-metrics-card .section-title {
   text-align: center;
   margin-bottom: 1.5rem;
   font-size: 1.5rem;
-  color: #D6F84C;
+  color: #28B295;
+  font-weight: 700;
 }
 
 .metrics-grid {
@@ -198,220 +317,296 @@
   background-color: #1C1C1E;
   padding: 1rem;
   border-radius: 12px;
-  border: 1px solid #4E4E50;
+  border: none;
+  box-shadow: 0 2px 8px #0002;
 }
 
 .metric-item span {
   display: block;
-  font-size: 1rem;
-  color: #E3E3E0;
-  opacity: 0.8;
+  font-size: 0.9rem;
+  color: #b0b3b8;
   margin-bottom: 0.5rem;
+  font-weight: 600;
 }
 
 .metric-item strong {
   font-size: 1.5rem;
-  color: #D6F84C;
+  color: #fff;
   font-weight: 700;
 }
 
-/* Notepad and Tips */
 .note-section, .tips-section {
-  background: #2A2A2C;
+  background: #23272f;
   padding: 2rem;
   border-radius: 16px;
   margin-bottom: 2rem;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 2px 12px #0004;
+  border: none;
 }
 
 .note-section .section-title, .tips-section .section-title {
-  text-align: center;
-  margin-bottom: 1.5rem;
+  color: #28B295;
   font-size: 1.5rem;
-  color: #D6F84C;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
 }
 
 .note-section textarea {
   width: 100%;
-  height: 120px;
+  min-height: 120px;
   padding: 1rem;
-  border-radius: 8px;
-  border: 1px solid #4E4E50;
-  background-color: #1C1C1E;
+  border: none;
+  border-radius: 10px;
+  background: #1C1C1E;
   color: #E3E3E0;
-  font-size: 1rem;
-  margin-bottom: 1rem;
+  font-family: 'Poppins', sans-serif;
   resize: vertical;
-  box-sizing: border-box;
+  font-size: 1rem;
 }
 
 .note-section button {
-  display: block;
-  width: 100%;
-  padding: 0.75rem;
+  background: #28B295;
+  color: #23272f;
   border: none;
   border-radius: 8px;
-  background-color: #D6F84C;
-  color: #1C1C1E;
+  padding: 12px 24px;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  transition: all 0.18s;
+  margin-top: 1rem;
+  font-family: 'Poppins', sans-serif;
 }
 
 .note-section button:hover {
-  background-color: #c4e83c;
+  background: #23a484;
+  color: #fff;
 }
 
 .save-confirmation {
-  display: block;
-  text-align: center;
-  margin-top: 1rem;
   color: #28B295;
   font-weight: 600;
+  margin-top: 1rem;
 }
 
 .tips-section ul {
   list-style: none;
   padding: 0;
-  margin: 0;
 }
 
 .tips-section ul li {
-  background-color: #1C1C1E;
-  padding: 1rem;
-  border-radius: 8px;
-  margin-bottom: 0.75rem;
-  border-left: 4px solid #D6F84C;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #2a2f38;
+  color: #E3E3E0;
+  font-size: 1rem;
+}
+
+.tips-section ul li:last-child {
+  border-bottom: none;
 }
 
 @media (max-width: 768px) {
   .insights-container .hero-section h1 {
-    font-size: 2.5rem;
+    font-size: 2rem;
   }
+  
   .pie-chart-wrapper {
     width: 90%;
   }
 }
 
-/* Fix for chart overflow and new input field */
 .chart-wrapper {
-  position: relative;
-  flex-grow: 1;
-  min-height: 0;
+  background: #23272f;
+  padding: 2rem;
+  border-radius: 16px;
+  box-shadow: 0 2px 12px #0004;
+  margin-bottom: 2rem;
+  border: none;
 }
 
 .expected-profit-input {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 1rem;
-  background-color: #2A2A2C;
-  padding: 1.5rem;
-  border-radius: 16px;
-  margin: 0 auto 2rem auto;
-  width: fit-content;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-}
-
-.expected-profit-input label {
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: #D6F84C;
-}
-
-.expected-profit-input input {
-  padding: 0.5rem 0.75rem;
-  border-radius: 8px;
-  border: 1px solid #4E4E50;
-  background-color: #1C1C1E;
-  color: #E3E3E0;
-  font-size: 1.1rem;
-  width: 150px;
-}
-
-/* Expense Limiter Card */
-.expense-limiter-card {
-  background: #2A2A2C;
+  background: #23272f;
   padding: 2rem;
   border-radius: 16px;
   margin-bottom: 2rem;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
-  text-align: center;
+  box-shadow: 0 2px 12px #0004;
+  border: none;
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.expected-profit-input label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: #28B295;
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.expected-profit-input input {
+  width: 100%;
+  padding: 12px 18px;
+  background: #1C1C1E;
+  color: #E3E3E0;
+  border: none;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-family: 'Poppins', sans-serif;
+  outline: none;
+  transition: all 0.18s;
+}
+
+.expected-profit-input input:focus {
+  background: #2a2f38;
+}
+
+.expected-profit-input button {
+  background: #28B295;
+  color: #23272f;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 24px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s;
+  font-family: 'Poppins', sans-serif;
+}
+
+.expected-profit-input button:hover {
+  background: #23a484;
+  color: #fff;
+}
+
+.expense-limiter-card {
+  background: #23272f;
+  padding: 2rem;
+  border-radius: 16px;
+  margin-bottom: 2rem;
+  box-shadow: 0 2px 12px #0004;
+  border: none;
 }
 
 .expense-limiter-card .section-title {
-  margin-top: 0;
-  margin-bottom: 1.5rem;
+  color: #28B295;
   font-size: 1.5rem;
-  color: #D6F84C;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
 }
 
 .expense-limiter-card .limiter-input {
   display: flex;
-  justify-content: center;
-  align-items: center;
   gap: 1rem;
-  margin-bottom: 1.5rem;
+  align-items: center;
+  margin-bottom: 1rem;
 }
 
 .expense-limiter-card .limiter-input label {
-  font-size: 1.1rem;
+  color: #28B295;
   font-weight: 600;
-  color: #E3E3E0;
+  font-size: 1rem;
 }
 
 .expense-limiter-card .limiter-input input {
-  padding: 0.5rem 0.75rem;
-  border-radius: 8px;
-  border: 1px solid #4E4E50;
-  background-color: #1C1C1E;
+  flex: 1;
+  padding: 12px 18px;
+  background: #1C1C1E;
   color: #E3E3E0;
-  font-size: 1.1rem;
-  width: 150px;
+  border: none;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-family: 'Poppins', sans-serif;
+  outline: none;
 }
 
 .expense-limiter-card .limiter-input button {
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
+  background: #28B295;
+  color: #23272f;
   border: none;
-  background-color: #D6F84C;
-  color: #1C1C1E;
+  border-radius: 8px;
+  padding: 12px 24px;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  transition: all 0.18s;
+  font-family: 'Poppins', sans-serif;
 }
 
 .expense-limiter-card .limiter-input button:hover {
-  background-color: #c4e83c;
+  background: #23a484;
+  color: #fff;
 }
 
 .progress-bar-container {
-  width: 100%;
-  background-color: #1C1C1E;
-  border-radius: 8px;
-  height: 25px;
-  margin-bottom: 1rem;
+  background: #1C1C1E;
+  border-radius: 10px;
+  padding: 0.5rem;
+  margin: 1rem 0;
   overflow: hidden;
-  border: 1px solid #4E4E50;
 }
 
 .progress-bar {
-  height: 100%;
-  background: linear-gradient(90deg, #28B295, #D6F84C);
+  height: 20px;
+  background: linear-gradient(90deg, #28B295, #23a484);
   border-radius: 8px;
-  transition: width 0.5s ease-in-out;
+  transition: width 0.3s ease;
 }
 
 .expense-limiter-card .limiter-text {
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: #E3E3E0;
+  color: #b0b3b8;
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  text-align: center;
 }
 
 .expense-limiter-card .limiter-text span:first-child {
-  color: #FF715B;
+  color: #28B295;
+  font-weight: 600;
 }
 
 .expense-limiter-card .limiter-text span:last-child {
+  color: #FF715B;
+  font-weight: 600;
+}
+
+.package-pie-card {
+  background: #23272f;
+  padding: 2rem;
+  border-radius: 16px;
+  margin-bottom: 2rem;
+  box-shadow: 0 2px 12px #0004;
+  border: none;
+}
+
+.package-pie-card .section-title {
   color: #28B295;
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.pie-chart-wrapper {
+  position: relative;
+  width: 70%;
+  height: 100%;
+  margin: 0 auto;
+}
+
+.section-title, .expense-limiter-card .section-title, .expected-profit-input label, .financial-metrics-card .section-title, .note-section .section-title, .tips-section .section-title, .chart-container .section-title {
+  text-align: center !important;
+  width: 100%;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Center the main hero heading and subtitle */
+.hero-section h1, .hero-section p {
+  text-align: center;
+  width: 100%;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
 } 
