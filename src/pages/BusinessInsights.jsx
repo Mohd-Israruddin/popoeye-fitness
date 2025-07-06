@@ -92,7 +92,7 @@ const BusinessInsights = () => {
       setExpenseLimit(limit);
       setTempExpenseLimit(limit);
 
-      if (statsRes.data.monthlyExpense >= limit) {
+      if ((statsRes.data.monthlyExpense || 0) >= limit) {
         if (!alertShownRef.current) {
           toast.warn("You have reached your monthly expense limit!");
           alertShownRef.current = true;
@@ -161,7 +161,7 @@ const BusinessInsights = () => {
       },
       {
         label: 'Actual Profit',
-        data: history.map(h => h.totalIncome - h.totalExpense),
+        data: history.map(h => (h.totalIncome || 0) - (h.totalExpense || 0)),
         borderColor: '#28B295',
         backgroundColor: 'rgba(40, 178, 149, 0.2)',
         fill: true,
@@ -175,7 +175,7 @@ const BusinessInsights = () => {
     datasets: [
       {
         label: 'Income',
-        data: history.map(h => h.totalIncome),
+        data: history.map(h => h.totalIncome || 0),
         backgroundColor: 'rgba(40, 178, 149, 0.7)',
         borderColor: '#28B295',
         borderWidth: 2,
@@ -183,7 +183,7 @@ const BusinessInsights = () => {
       },
       {
         label: 'Expense',
-        data: history.map(h => h.totalExpense),
+        data: history.map(h => h.totalExpense || 0),
         backgroundColor: 'rgba(255, 113, 91, 0.7)',
         borderColor: '#FF715B',
         borderWidth: 2,
@@ -195,7 +195,7 @@ const BusinessInsights = () => {
   const memberChartData = {
     labels: ['Active', 'Expired'],
     datasets: [{
-      data: [memberDistribution.active, memberDistribution.expired],
+      data: [memberDistribution.active || 0, memberDistribution.expired || 0],
       backgroundColor: ['#28B295', '#FF715B'],
       borderColor: ['#1C1C1E'],
       borderWidth: 2,
@@ -205,7 +205,7 @@ const BusinessInsights = () => {
   const expenseChartData = {
     labels: expenseBreakdown.map(e => e.category),
     datasets: [{
-      data: expenseBreakdown.map(e => e.total),
+      data: expenseBreakdown.map(e => e.total || 0),
       backgroundColor: ['#3f51b5', '#2196f3', '#4caf50', '#ff5722', '#9c27b0', '#ffc107', '#e91e63', '#795548', '#607d8b', '#00bcd4'],
       borderColor: ['#1C1C1E'],
       borderWidth: 2,
@@ -277,28 +277,28 @@ const BusinessInsights = () => {
            <div className="stat-card total-members">
             <FaUsers className="stat-icon" />
             <div className="stat-content">
-              <h3><CountUp end={stats.totalMembers} duration={2} /></h3>
+              <h3><CountUp end={stats.totalMembers || 0} duration={2} /></h3>
               <p>Total Members</p>
             </div>
           </div>
           <div className="stat-card revenue">
             <FaArrowUp className="stat-icon" />
             <div className="stat-content">
-              <h3>₹<CountUp end={stats.monthlyRevenue} duration={2} separator="," /></h3>
+              <h3>₹<CountUp end={stats.monthlyRevenue || 0} duration={2} separator="," /></h3>
               <p>Monthly Revenue</p>
             </div>
           </div>
           <div className="stat-card expense">
             <FaArrowDown className="stat-icon" />
             <div className="stat-content">
-              <h3>₹<CountUp end={stats.monthlyExpense} duration={2} separator="," /></h3>
+              <h3>₹<CountUp end={stats.monthlyExpense || 0} duration={2} separator="," /></h3>
               <p>Monthly Expenses</p>
             </div>
           </div>
           <div className="stat-card profit">
             <FaDollarSign className="stat-icon" />
             <div className="stat-content">
-              <h3>₹<CountUp end={stats.monthlyRevenue - stats.monthlyExpense} duration={2} separator="," /></h3>
+              <h3>₹<CountUp end={(stats.monthlyRevenue || 0) - (stats.monthlyExpense || 0)} duration={2} separator="," /></h3>
               <p>Net Monthly Profit</p>
             </div>
           </div>
@@ -318,11 +318,11 @@ const BusinessInsights = () => {
           <div className="progress-bar-container">
             <div 
               className="progress-bar"
-              style={{ width: `${Math.min((stats.monthlyExpense / expenseLimit) * 100, 100)}%`}}
+              style={{ width: `${Math.min(((stats.monthlyExpense || 0) / (expenseLimit || 1)) * 100, 100)}%`}}
             ></div>
           </div>
           <div className="limiter-text">
-            <span>₹{stats.monthlyExpense.toLocaleString()}</span> / <span>₹{expenseLimit.toLocaleString()}</span>
+            <span>₹{(stats.monthlyExpense || 0).toLocaleString()}</span> / <span>₹{(expenseLimit || 0).toLocaleString()}</span>
           </div>
         </div>
 
@@ -340,15 +340,15 @@ const BusinessInsights = () => {
         <div className="financial-metrics-card">
           <h2 className="section-title"><FaChartBar /> Financial Metrics (Last 30 Days)</h2>
           <div className="metrics-grid">
-            <div className="metric-item"><span>Revenue:</span> <strong>₹{metrics.revenue.toLocaleString()}</strong></div>
-            <div className="metric-item"><span>Total Expenses:</span> <strong>₹{metrics.expense.toLocaleString()}</strong></div>
-            <div className="metric-item"><span>COGS:</span> <strong>₹{metrics.cogs.toLocaleString()}</strong></div>
-            <div className="metric-item"><span>Gross Profit:</span> <strong>₹{metrics.grossProfit.toLocaleString()}</strong></div>
-            <div className="metric-item"><span>EBITDA:</span> <strong>₹{metrics.ebitda.toLocaleString()}</strong></div>
-            <div className="metric-item"><span>Net Profit:</span> <strong>₹{metrics.netProfit.toLocaleString()}</strong></div>
-            <div className="metric-item"><span>Depreciation:</span> <strong>₹{metrics.depreciation.toLocaleString()}</strong></div>
-            <div className="metric-item"><span>Interest:</span> <strong>₹{metrics.interest.toLocaleString()}</strong></div>
-            <div className="metric-item"><span>Tax:</span> <strong>₹{metrics.tax.toLocaleString()}</strong></div>
+            <div className="metric-item"><span>Revenue:</span> <strong>₹{(metrics.revenue || 0).toLocaleString()}</strong></div>
+            <div className="metric-item"><span>Total Expenses:</span> <strong>₹{(metrics.expense || 0).toLocaleString()}</strong></div>
+            <div className="metric-item"><span>COGS:</span> <strong>₹{(metrics.cogs || 0).toLocaleString()}</strong></div>
+            <div className="metric-item"><span>Gross Profit:</span> <strong>₹{(metrics.grossProfit || 0).toLocaleString()}</strong></div>
+            <div className="metric-item"><span>EBITDA:</span> <strong>₹{(metrics.ebitda || 0).toLocaleString()}</strong></div>
+            <div className="metric-item"><span>Net Profit:</span> <strong>₹{(metrics.netProfit || 0).toLocaleString()}</strong></div>
+            <div className="metric-item"><span>Depreciation:</span> <strong>₹{(metrics.depreciation || 0).toLocaleString()}</strong></div>
+            <div className="metric-item"><span>Interest:</span> <strong>₹{(metrics.interest || 0).toLocaleString()}</strong></div>
+            <div className="metric-item"><span>Tax:</span> <strong>₹{(metrics.tax || 0).toLocaleString()}</strong></div>
           </div>
         </div>
 
