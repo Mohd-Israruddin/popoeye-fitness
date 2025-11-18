@@ -1,7 +1,9 @@
 import axios from 'axios';
 
 // Configure axios to use the backend server
-axios.defaults.baseURL = 'http://localhost:5000/api';
+// Use environment variable for production, fallback to localhost for development
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+axios.defaults.baseURL = `${API_BASE_URL}/api`;
 
 // Add request interceptor for debugging
 axios.interceptors.request.use(

@@ -80,7 +80,8 @@ cron.schedule("0 10 * * *", async () => {
 // ✅ Cron Job: Process recurring transactions daily at 9 AM
 cron.schedule("0 9 * * *", async () => {
   try {
-    const response = await axios.post('http://localhost:5000/api/recurring/process-due');
+    const serverUrl = process.env.SERVER_URL || `http://localhost:${process.env.PORT || 5000}`;
+    const response = await axios.post(`${serverUrl}/api/recurring/process-due`);
     console.log(`💰 Processed recurring transactions: ${response.data.message}`);
   } catch (error) {
     console.error('❌ Failed to process recurring transactions:', error.message);
