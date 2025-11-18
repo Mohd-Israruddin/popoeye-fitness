@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import api from '../../service/api';
 import "./MemberTable.css";
-import { FaEdit, FaTrash, FaStickyNote, FaUser, FaWhatsapp, FaDumbbell, FaCommentDots, FaWeight, FaCommentAlt, FaRulerHorizontal } from 'react-icons/fa';
+import { FaEdit, FaTrash, FaStickyNote, FaUser, FaEnvelope, FaDumbbell, FaCommentDots, FaWeight, FaCommentAlt, FaRulerHorizontal } from 'react-icons/fa';
 import AdminPasskeyModal from './AdminPasskeyModal';
 import { useAuth } from '../../data/AuthContext';
 
@@ -39,32 +39,28 @@ const MemberTable = ({ members, onEdit, onDelete, onOpenBodyMeasurements }) => {
     }
   };
 
-  const handleSendSMS = async (member) => {
-    if (!member.whatsapp) {
-      alert(`⚠️ ${member.name} has no WhatsApp number.`);
+  const handleSendEmail = async (member) => {
+    if (!member.email) {
+      alert(`⚠️ ${member.name} has no email address.`);
       return;
     }
 
     try {
-      const res = await api.post("/sms/send", {
-        name: member.name,
-        number: member.whatsapp,
-        message: `Hi ${member.name}, your membership expires on ${member.expiry_date}. Please renew soon.`,
-      });
-      alert(`✅ SMS sent to ${member.name}`);
+      const res = await api.post("/members/send-welcome/" + member.id);
+      alert(`✅ Welcome email sent to ${member.name}`);
     } catch (error) {
-      console.error("SMS Error:", error);
-      alert(`❌ Failed to send SMS to ${member.name}`);
+      console.error("Email Error:", error);
+      alert(`❌ Failed to send email to ${member.name}`);
     }
   };
 
-  const handleSendBulkSMS = async () => {
+  const handleSendBulkEmail = async () => {
     try {
-      const res = await api.get(`/members/send-remainder/${selected.join(',')}`);
-      alert(res.data.message || "✅ Expiry reminders sent.");
+      const res = await api.get("/members/send-expiry-reminders");
+      alert(res.data.message || "✅ Email reminders sent.");
     } catch (error) {
-      console.error("Bulk SMS error:", error);
-      alert("❌ Failed to send bulk SMS.");
+      console.error("Bulk email error:", error);
+      alert("❌ Failed to send bulk email reminders.");
     }
   };
 
@@ -159,10 +155,10 @@ const MemberTable = ({ members, onEdit, onDelete, onOpenBodyMeasurements }) => {
             <>
               <button
                 className="members-bulk-sms-btn"
-                onClick={handleSendBulkSMS}
+                onClick={handleSendBulkEmail}
               >
                 <FaCommentDots />
-                <span>Send SMS ({selected.length})</span>
+                <span>Send Email Reminders ({selected.length})</span>
               </button>
               <button
                 className="members-bulk-delete-btn"
@@ -186,7 +182,7 @@ const MemberTable = ({ members, onEdit, onDelete, onOpenBodyMeasurements }) => {
               <th className="members-checkbox-header"></th>
               <th>Member ID</th>
               <th>Name</th>
-              <th>WhatsApp</th>
+              <th>Email</th>
               <th>Package</th>
               <th>Join Date</th>
               <th>Expiry Date</th>
@@ -217,8 +213,8 @@ const MemberTable = ({ members, onEdit, onDelete, onOpenBodyMeasurements }) => {
                     <td className="members-id-cell">{member.member_id}</td>
                     <td className="members-name-cell">{member.name}</td>
                     <td>
-                      <a href={`https://wa.me/${member.whatsapp}`} target="_blank" rel="noopener noreferrer" className="members-whatsapp-link">
-                        <FaWhatsapp /> {member.whatsapp || 'N/A'}
+                      <a href={`mailto:${member.email}`} className="members-email-link">
+                        <FaEnvelope /> {member.email || 'N/A'}
                       </a>
                     </td>
                     <td>{member.package}</td>
@@ -232,9 +228,9 @@ const MemberTable = ({ members, onEdit, onDelete, onOpenBodyMeasurements }) => {
                     <td className="members-actions-cell">
                       <div className="members-action-buttons">
                         <button
-                          onClick={(e) => handleActionClick(e, () => handleSendSMS(member))}
-                          className="members-action-btn members-action-btn-sms"
-                          title="Send SMS"
+                          onClick={(e) => handleActionClick(e, () => handleSendEmail(member))}
+                          className="members-action-btn members-action-btn-email"
+                          title="Send Email"
                         >
                           <FaCommentAlt />
                         </button>

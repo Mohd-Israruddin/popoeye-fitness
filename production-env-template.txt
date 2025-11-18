@@ -1,0 +1,52 @@
+# 🚀 PRODUCTION ENVIRONMENT CONFIGURATION
+# Copy this to .env in your backend folder on Hostinger
+
+# ===========================================
+# DATABASE CONFIGURATION (Hostinger MySQL)
+# ===========================================
+DB_HOST=localhost
+DB_USER=your_username_dbuser
+DB_PASSWORD=your_secure_db_password
+DB_NAME=your_username_gym_software_db
+
+# ===========================================
+# WHATSAPP CONFIGURATION (Twilio)
+# ===========================================
+TWILIO_ACCOUNT_SID=your_twilio_account_sid
+TWILIO_AUTH_TOKEN=your_twilio_auth_token
+TWILIO_WHATSAPP_NUMBER=whatsapp:+14155238886
+WHATSAPP_COUNTRY_CODE=91
+GYM_NAME=Your Gym Name Here
+CONTACT_PHONE=+1234567890
+
+# ===========================================
+# SECURITY CONFIGURATION
+# ===========================================
+JWT_SECRET=your_super_secure_jwt_secret_key_here_make_it_long_and_random
+
+# ===========================================
+# SERVER CONFIGURATION
+# ===========================================
+PORT=3000
+NODE_ENV=production
+
+# ===========================================
+# OPTIONAL: CORS Configuration
+# ===========================================
+# CORS_ORIGIN=https://yourdomain.com
+# CORS_CREDENTIALS=true
+
+# ===========================================
+# OPTIONAL: Logging Configuration
+# ===========================================
+# LOG_LEVEL=info
+# LOG_FILE=logs/app.log
+
+# ===========================================
+# NOTES:
+# ===========================================
+# 1. Replace all "your_*" placeholders with actual values
+# 2. Use strong passwords for database and JWT
+# 3. Keep this file secure and never commit to version control
+# 4. Test email functionality after deployment
+# 5. Change default admin code from '1234' after first login

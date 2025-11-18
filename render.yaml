@@ -15,6 +15,16 @@ services:
         fromDatabase:
           name: gym-database
           property: connectionString
+      - key: EMAIL_USER
+        value: your-email@gmail.com
+      - key: EMAIL_PASSWORD
+        value: your-app-password
+      - key: GYM_NAME
+        value: Your Gym Name
+      - key: CONTACT_PHONE
+        value: +1234567890
+      - key: JWT_SECRET
+        value: your-super-secret-jwt-key
 
   # Frontend
   - type: web

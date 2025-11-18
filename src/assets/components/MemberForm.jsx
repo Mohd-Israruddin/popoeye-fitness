@@ -6,7 +6,8 @@ const generateMemberId = () => `M${Date.now()}`;
 const initialData = {
   member_id: "",
   name: "",
-  whatsapp: "",
+  email: "",
+  phone: "",
   package: "",
   join_date: "",
   expiry_date: "",
@@ -102,17 +103,30 @@ const MemberForm = ({ member, onSave, onClose }) => {
           </div>
 
           <div className="members-form-group members-form-span-2">
-            <label htmlFor="whatsapp">WhatsApp Number</label>
+            <label htmlFor="email">Email Address</label>
             <input
-              id="whatsapp"
-              name="whatsapp"
-              value={data.whatsapp}
+              id="email"
+              name="email"
+              value={data.email}
               onChange={handleChange}
-              placeholder="10-digit WhatsApp/mobile number"
+              placeholder="member@example.com"
+              type="email"
+              required
+              className="members-form-input"
+            />
+          </div>
+
+          <div className="members-form-group members-form-span-2">
+            <label htmlFor="phone">Phone Number</label>
+            <input
+              id="phone"
+              name="phone"
+              value={data.phone}
+              onChange={handleChange}
+              placeholder="10-digit phone number"
               pattern="^\d{10}$"
               title="Enter a valid 10-digit number"
               type="text"
-              required
               className="members-form-input"
             />
           </div>

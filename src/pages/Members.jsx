@@ -19,8 +19,8 @@ const Members = () => {
   const [bodyMember, setBodyMember] = useState(null);
   const [activeFilter, setActiveFilter] = useState('all');
   const [packageFilter, setPackageFilter] = useState('all');
-  const [smsLoading, setSmsLoading] = useState(false);
-  const [smsMessage, setSmsMessage] = useState("");
+  const [emailLoading, setEmailLoading] = useState(false);
+  const [emailMessage, setEmailMessage] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [showCodeModal, setShowCodeModal] = useState(false);
   const [pendingEdit, setPendingEdit] = useState(null);
@@ -148,17 +148,17 @@ const Members = () => {
     }
   };
 
-  const handleSMS = async () => {
-    setSmsLoading(true);
-    setSmsMessage("");
+  const handleEmailReminders = async () => {
+    setEmailLoading(true);
+    setEmailMessage("");
     try {
       const res = await api.get("/members/send-expiry-reminders");
-      setSmsMessage(res.data.message || "SMS sent successfully!");
+      setEmailMessage(res.data.message || "Email reminders sent successfully!");
     } catch (error) {
-      setSmsMessage("Failed to send SMS reminders.");
-      console.error("Failed to send SMS:", error);
+      setEmailMessage("Failed to send email reminders.");
+      console.error("Failed to send email reminders:", error);
     } finally {
-      setSmsLoading(false);
+      setEmailLoading(false);
     }
   };
 
@@ -193,9 +193,9 @@ const Members = () => {
             <p>An overview of your gym's membership status.</p>
           </div>
           <div className="members-action-buttons">
-            <button className="members-btn" onClick={() => console.log('Send Reminders clicked!')}>
+            <button className="members-btn" onClick={handleEmailReminders} disabled={emailLoading}>
               <FiMail />
-              <span>Send Reminders</span>
+              <span>{emailLoading ? 'Sending...' : 'Send Email Reminders'}</span>
             </button>
             <button className="members-btn members-btn-primary" onClick={() => setShowForm(true)}>
               <FiPlus />
@@ -279,10 +279,10 @@ const Members = () => {
         </div>
       </div>
 
-      {/* SMS Message */}
-      {smsMessage && (
-        <div className={`members-sms-message ${smsMessage.includes('Failed') ? 'error' : 'success'}`}>
-          {smsMessage}
+      {/* Email Message */}
+      {emailMessage && (
+        <div className={`members-email-message ${emailMessage.includes('Failed') ? 'error' : 'success'}`}>
+          {emailMessage}
         </div>
       )}
 

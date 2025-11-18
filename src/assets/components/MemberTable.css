@@ -84,8 +84,8 @@
   color: var(--text);
 }
 
-.members-whatsapp-link {
-  color: var(--primary);
+.members-email-link {
+  color: #ffffff !important;
   text-decoration: none;
   display: flex;
   align-items: center;
@@ -93,8 +93,8 @@
   transition: color 0.2s ease;
 }
 
-.members-whatsapp-link:hover {
-  color: var(--accent1);
+.members-email-link:hover {
+  color: var(--accent1) !important;
 }
 
 .members-total-amount-cell {
@@ -159,6 +159,10 @@
   filter: brightness(1.1);
 }
 
+.members-action-btn-email { 
+  background-color: var(--primary) !important; 
+  color: #ffffff !important;
+}
 .members-action-btn-sms { background-color: var(--primary); }
 .members-action-btn-measure { background-color: var(--primary); }
 .members-action-btn-edit { background-color: var(--accent1); }
@@ -323,6 +327,16 @@ input[type="checkbox"] {
 .members-action-btn:hover {
   transform: translateY(-2px) scale(1.05);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.members-action-btn-email { 
+  background-color: var(--primary);
+  color: #ffffff;
+}
+
+.members-action-btn-email:hover {
+  background-color: #23a484;
+  color: #ffffff;
 }
 
 .members-action-btn-sms { 

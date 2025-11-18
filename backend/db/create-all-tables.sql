@@ -1,184 +1,94 @@
-CREATE TABLE IF NOT EXISTS members (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  member_id VARCHAR(50) NOT NULL UNIQUE,
-  name VARCHAR(100) NOT NULL,
-  whatsapp VARCHAR(15),
-  join_date DATE,
-  expiry_date DATE,
-  package VARCHAR(100),
-  total_amount DECIMAL(10,2),
-  paid_amount DECIMAL(10,2),
-  pending_amount DECIMAL(10,2),
-  height DECIMAL(5,2),
-  weight DECIMAL(5,2),
-  chest DECIMAL(5,2),
-  waist DECIMAL(5,2),
-  hips DECIMAL(5,2),
-  biceps DECIMAL(5,2),
-  thighs DECIMAL(5,2),
-  address VARCHAR(255),
-  health_issues VARCHAR(255),
-  blood_group VARCHAR(10),
-  extra_details TEXT
-);
+-- ========================================
+-- INDEXES FOR PERFORMANCE
+-- ========================================
 
-CREATE TABLE IF NOT EXISTS staff (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  name VARCHAR(100) NOT NULL,
-  role VARCHAR(100),
-  phone VARCHAR(15),
-  email VARCHAR(100),
-  address TEXT,
-  photo VARCHAR(255),
-  status VARCHAR(20) DEFAULT 'Active',
-  salary DECIMAL(10,2) DEFAULT 0.00,
-  bonus DECIMAL(10,2) DEFAULT 0.00,
-  salary_status VARCHAR(20) DEFAULT 'Pending'
-);
+-- Members indexes
+DROP INDEX IF EXISTS idx_members_expiry ON members;
+CREATE INDEX idx_members_expiry ON members(expiry_date);
 
+DROP INDEX IF EXISTS idx_members_join_date ON members;
+CREATE INDEX idx_members_join_date ON members(join_date);
 
-CREATE TABLE IF NOT EXISTS finances (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  date DATE NOT NULL,
-  type VARCHAR(10) NOT NULL,
-  amount DECIMAL(10,2) NOT NULL,
-  category VARCHAR(100) NOT NULL,
-  payment VARCHAR(50) NOT NULL,
-  description TEXT
-);
+DROP INDEX IF EXISTS idx_members_name ON members;
+CREATE INDEX idx_members_name ON members(name);
 
+-- Staff indexes
+DROP INDEX IF EXISTS idx_staff_status ON staff;
+CREATE INDEX idx_staff_status ON staff(status);
 
-CREATE TABLE IF NOT EXISTS schedule (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  date DATE NOT NULL,
-  member_name VARCHAR(100) NOT NULL,
-  category VARCHAR(100) NOT NULL,
-  trainer VARCHAR(100),
-  time TIME NOT NULL
-);
+DROP INDEX IF EXISTS idx_staff_role ON staff;
+CREATE INDEX idx_staff_role ON staff(role);
 
+DROP INDEX IF EXISTS idx_staff_code ON staff;
+CREATE INDEX idx_staff_code ON staff(staff_code);
 
-CREATE TABLE IF NOT EXISTS recurring_transactions (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  name VARCHAR(100) NOT NULL,
-  type VARCHAR(10) NOT NULL,
-  amount DECIMAL(10,2) NOT NULL,
-  category VARCHAR(100) NOT NULL,
-  payment VARCHAR(50) NOT NULL,
-  description TEXT,
-  frequency VARCHAR(20) NOT NULL,
-  start_date DATE NOT NULL,
-  end_date DATE,
-  is_active BOOLEAN DEFAULT TRUE,
-  last_processed DATE,
-  next_due_date DATE NOT NULL,
-  staff_id INT,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at DATETIME DEFAULT NULL,
-  FOREIGN KEY (staff_id) REFERENCES staff(id) ON DELETE SET NULL
-);
+-- Finances indexes
+DROP INDEX IF EXISTS idx_finances_date ON finances;
+CREATE INDEX idx_finances_date ON finances(date);
 
-CREATE TABLE IF NOT EXISTS staff_salary_transactions (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  staff_id INT NOT NULL,
-  amount DECIMAL(10,2) NOT NULL,
-  payment_date DATE NOT NULL,
-  payment_method VARCHAR(50) NOT NULL,
-  finance_id INT,
-  notes TEXT,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (staff_id) REFERENCES staff(id) ON DELETE CASCADE,
-  FOREIGN KEY (finance_id) REFERENCES finances(id) ON DELETE SET NULL
-);
+DROP INDEX IF EXISTS idx_finances_type ON finances;
+CREATE INDEX idx_finances_type ON finances(type);
 
-CREATE TABLE IF NOT EXISTS inventory (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  name VARCHAR(100) NOT NULL,
-  cost_price DECIMAL(10,2),
-  selling_price DECIMAL(10,2),
-  stock INT NOT NULL,
-  category VARCHAR(100) NOT NULL,
-  dealer_contact VARCHAR(255),
-  low_stock_threshold INT DEFAULT 5
-);
+DROP INDEX IF EXISTS idx_finances_category ON finances;
+CREATE INDEX idx_finances_category ON finances(category);
 
-CREATE TABLE IF NOT EXISTS settings (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  gym_name VARCHAR(100),
-  contact_email VARCHAR(100),
-  contact_phone VARCHAR(15),
-  opening_hours TEXT,
-  theme VARCHAR(50) DEFAULT 'default',
-  notifications_enabled BOOLEAN DEFAULT TRUE,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at DATETIME DEFAULT NULL,
-  expense_limit DECIMAL(10,2) DEFAULT 100000.00,
-  dashboard_layout TEXT,
-  note TEXT
-);
+-- Schedule indexes
+DROP INDEX IF EXISTS idx_schedule_date ON schedule;
+CREATE INDEX idx_schedule_date ON schedule(date);
 
-CREATE TABLE IF NOT EXISTS admin (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  username VARCHAR(100) NOT NULL UNIQUE,
-  passkey_hash VARCHAR(255) NOT NULL,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at DATETIME DEFAULT NULL
-);
+DROP INDEX IF EXISTS idx_schedule_time ON schedule;
+CREATE INDEX idx_schedule_time ON schedule(time);
 
+-- Recurring transactions indexes
+DROP INDEX IF EXISTS idx_recurring_active ON recurring_transactions;
+CREATE INDEX idx_recurring_active ON recurring_transactions(is_active, next_due_date);
 
-CREATE TABLE IF NOT EXISTS enquiries (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  name VARCHAR(255) NOT NULL,
-  phone VARCHAR(20) NOT NULL,
-  email VARCHAR(255),
-  source VARCHAR(100),
-  interest VARCHAR(100),
-  status VARCHAR(50) DEFAULT 'New',
-  follow_up_date DATE,
-  notes TEXT,
-  enquiry_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  created_at DATETIME DEFAULT NULL,
-  updated_at DATETIME DEFAULT NULL
-);
+DROP INDEX IF EXISTS idx_recurring_staff ON recurring_transactions;
+CREATE INDEX idx_recurring_staff ON recurring_transactions(staff_id);
 
+-- Staff salary indexes
+DROP INDEX IF EXISTS idx_staff_salary_date ON staff_salary_transactions;
+CREATE INDEX idx_staff_salary_date ON staff_salary_transactions(payment_date);
 
-CREATE TABLE IF NOT EXISTS sales_tracking (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  product_id INT,
-  product_name VARCHAR(255) NOT NULL,
-  quantity INT DEFAULT 1,
-  cost_price DECIMAL(10,2) NOT NULL,
-  selling_price DECIMAL(10,2) NOT NULL,
-  profit DECIMAL(10,2) NOT NULL,
-  sale_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  payment_method VARCHAR(50) DEFAULT 'Cash',
-  FOREIGN KEY (product_id) REFERENCES inventory(id) ON DELETE CASCADE
-);
+DROP INDEX IF EXISTS idx_staff_salary_staff ON staff_salary_transactions;
+CREATE INDEX idx_staff_salary_staff ON staff_salary_transactions(staff_id);
 
+-- Inventory indexes
+DROP INDEX IF EXISTS idx_inventory_category ON inventory;
+CREATE INDEX idx_inventory_category ON inventory(category);
 
-CREATE TABLE IF NOT EXISTS owner_notes (
-  id INT PRIMARY KEY DEFAULT 1,
-  note TEXT,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
+DROP INDEX IF EXISTS idx_inventory_stock ON inventory;
+CREATE INDEX idx_inventory_stock ON inventory(stock);
 
+DROP INDEX IF EXISTS idx_inventory_name ON inventory;
+CREATE INDEX idx_inventory_name ON inventory(name);
 
-CREATE TABLE IF NOT EXISTS otp_verification (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  email VARCHAR(100) NOT NULL,
-  otp VARCHAR(10) NOT NULL,
-  expires_at DATETIME NOT NULL,
-  verified BOOLEAN DEFAULT FALSE,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+-- Sales tracking indexes
+DROP INDEX IF EXISTS idx_sales_date ON sales_tracking;
+CREATE INDEX idx_sales_date ON sales_tracking(sale_date);
 
+DROP INDEX IF EXISTS idx_sales_product ON sales_tracking;
+CREATE INDEX idx_sales_product ON sales_tracking(product_id);
 
-CREATE TABLE IF NOT EXISTS admin_settings (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  username VARCHAR(100) NOT NULL,
-  email VARCHAR(100) NOT NULL,
-  phone VARCHAR(15),
-  passkey VARCHAR(255) NOT NULL,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at DATETIME DEFAULT NULL
-);
+-- Enquiries indexes
+DROP INDEX IF EXISTS idx_enquiries_date ON enquiries;
+CREATE INDEX idx_enquiries_date ON enquiries(enquiry_date);
+
+DROP INDEX IF EXISTS idx_enquiries_status ON enquiries;
+CREATE INDEX idx_enquiries_status ON enquiries(status);
+
+DROP INDEX IF EXISTS idx_enquiries_follow_up ON enquiries;
+CREATE INDEX idx_enquiries_follow_up ON enquiries(follow_up_date);
+
+-- Activity logs indexes
+DROP INDEX IF EXISTS idx_activity_timestamp ON activity_logs;
+CREATE INDEX idx_activity_timestamp ON activity_logs(timestamp);
+
+DROP INDEX IF EXISTS idx_activity_staff ON activity_logs;
+CREATE INDEX idx_activity_staff ON activity_logs(staff_id);
+
+DROP INDEX IF EXISTS idx_activity_admin ON activity_logs;
+CREATE INDEX idx_activity_admin ON activity_logs(admin_id);
+
+DROP INDEX IF EXISTS idx_activity_target ON activity_logs;
+CREATE INDEX idx_activity_target ON activity_logs(target_type, target_id);

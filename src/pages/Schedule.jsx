@@ -25,7 +25,7 @@ const categoryLimits = {
 const Schedule = () => {
   const [bookings, setBookings] = useState({});
   const [selectedSlot, setSelectedSlot] = useState(null);
-  const [form, setForm] = useState({ member: "", category: "Yoga", trainer: "" });
+  const [form, setForm] = useState({ member: "", category: "Yoga", trainer: "", email: "" });
   const [members, setMembers] = useState([]);
   const [trainers, setTrainers] = useState([]);
   const [newMember, setNewMember] = useState("");
@@ -50,7 +50,7 @@ const Schedule = () => {
   const fetchMembers = async () => {
     try {
       const res = await axios.get("/members");
-      setMembers(res.data.map(m => m.name));
+      setMembers(res.data);
     } catch (err) {
       console.error("Error fetching members", err);
       setErrorMessage("Failed to fetch members");
@@ -82,13 +82,26 @@ const Schedule = () => {
 
   const handleSlotClick = (day, time) => {
     setSelectedSlot({ day, time });
-    setForm({ member: "", category: "Yoga", trainer: "" });
+    setForm({ member: "", category: "Yoga", trainer: "", email: "" });
     setEditIndex(null);
     setReminder(`Don't forget to assign trainer and confirm category.`);
   };
 
   const handleInputChange = (e) => {
-    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    const { name, value } = e.target;
+    setForm((prev) => {
+      const newForm = { ...prev, [name]: value };
+      
+      // Auto-populate email when member is selected
+      if (name === "member" && value) {
+        const selectedMember = members.find(m => m.name === value);
+        if (selectedMember && selectedMember.email) {
+          newForm.email = selectedMember.email;
+        }
+      }
+      
+      return newForm;
+    });
   };
 
   const handleBookingSubmit = async () => {
@@ -142,7 +155,7 @@ const Schedule = () => {
         setSuccessMessage(`Booking successful for ${form.member} in ${form.category}`);
       }
 
-      setForm({ member: "", category: "Yoga", trainer: "" });
+      setForm({ member: "", category: "Yoga", trainer: "", email: "" });
       setSelectedSlot(null);
       setEditIndex(null);
       setReminder("");
@@ -233,7 +246,8 @@ const Schedule = () => {
     setForm({
       member: booking.member,
       category: booking.category,
-      trainer: booking.trainer
+      trainer: booking.trainer,
+      email: booking.email || ""
     });
     setEditIndex(index);
     setReminder("Editing existing booking...");
@@ -377,7 +391,7 @@ const Schedule = () => {
                 <label htmlFor="memberFilter">By Member</label>
                 <select id="memberFilter" name="member" value={filters.member} onChange={handleFilterChange} className="schedule-filter-select">
                   <option value="">All Members</option>
-                  {members.map(m => <option key={m} value={m}>{m}</option>)}
+                  {members.map(m => <option key={m.id} value={m.name}>{m.name}</option>)}
                 </select>
               </div>
               <div className="schedule-filter-item">
@@ -440,8 +454,19 @@ const Schedule = () => {
                   <label>Member</label>
                   <select name="member" value={form.member} onChange={handleInputChange}>
                       <option value="">Select Member</option>
-                      {members.map((m) => <option key={m} value={m}>{m}</option>)}
+                      {members.map((m) => <option key={m.id} value={m.name}>{m.name}</option>)}
                   </select>
+              </div>
+
+              <div className="form-group">
+                  <label>Email Address</label>
+                  <input 
+                    type="email" 
+                    name="email" 
+                    value={form.email} 
+                    onChange={handleInputChange}
+                    placeholder="Enter member's email address"
+                  />
               </div>
 
               <div className="form-group">

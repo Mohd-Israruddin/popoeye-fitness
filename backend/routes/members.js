@@ -3,8 +3,8 @@ require("dotenv").config(); // 🔑 Load environment variables
 const express = require("express");
 const router = express.Router();
 const db = require("../db");
-const axios = require("axios");
 const bcrypt = require("bcryptjs");
+const { sendWelcomeMessage, sendExpiryReminderMessage, sendPaymentConfirmationMessage } = require("../services/whatsappService");
 
 // ============================
 // GET all members
@@ -19,13 +19,14 @@ router.get("/", async (req, res) => {
 });
 
 // ============================
-// POST - Add a new member + welcome SMS
+// POST - Add a new member + welcome email
 // ============================
 router.post("/", async (req, res) => {
   const {
     member_id,
     name,
-    whatsapp,
+    email,
+    phone,
     join_date,
     expiry_date,
     package,
@@ -49,13 +50,14 @@ router.post("/", async (req, res) => {
 
   const sql = `
     INSERT INTO members 
-    (member_id, name, whatsapp, join_date, expiry_date, package, total_amount, paid_amount, pending_amount, height, weight, chest, waist, hips, biceps, thighs, address, health_issues, blood_group, extra_details)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    (member_id, name, email, phone, join_date, expiry_date, package, total_amount, paid_amount, pending_amount, height, weight, chest, waist, hips, biceps, thighs, address, health_issues, blood_group, extra_details)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `;
   const values = [
     member_id,
     name,
-    whatsapp,
+    email,
+    phone,
     join_date,
     expiry_date,
     package,
@@ -101,21 +103,23 @@ router.post("/", async (req, res) => {
       );
     }
 
-    // ✅ Send Welcome SMS
-    try {
-      await axios.get("https://www.fast2sms.com/dev/bulkV2", {
-        params: {
-          authorization: process.env.FAST2SMS_API_KEY,
-          sender_id: "FSTSMS",
-          message: `Hi ${name}, welcome to the gym! Package: ${package}. Valid till ${expiry_date}.`,
-          language: "english",
-          route: "q",
-          numbers: whatsapp,
-        },
-      });
-      console.log("✅ Welcome SMS sent to", whatsapp);
-    } catch (smsErr) {
-      console.error("❌ SMS failed:", smsErr.message);
+    // ✅ Send Welcome WhatsApp Message
+    if (phone) {
+      try {
+        await sendWelcomeMessage({
+          name,
+          phone,
+          member_id,
+          package,
+          join_date,
+          expiry_date,
+          total_amount,
+          paid_amount
+        });
+        console.log("✅ Welcome WhatsApp message sent to", phone);
+      } catch (whatsappErr) {
+        console.error("❌ WhatsApp failed:", whatsappErr.message);
+      }
     }
 
     await logActivity(created_by, 'add', 'member', result.insertId, `Added member: ${name}`);
@@ -134,7 +138,8 @@ router.put("/:id", async (req, res) => {
   const {
     member_id,
     name,
-    whatsapp,
+    email,
+    phone,
     join_date,
     expiry_date,
     package,
@@ -168,7 +173,7 @@ router.put("/:id", async (req, res) => {
 
   const sql = `
     UPDATE members SET 
-      member_id = ?, name = ?, whatsapp = ?, 
+      member_id = ?, name = ?, email = ?, phone = ?, 
       join_date = ?, expiry_date = ?, package = ?, 
       total_amount = ?, paid_amount = ?, pending_amount = ?,
       height = ?, weight = ?, chest = ?, waist = ?, hips = ?, biceps = ?, thighs = ?,
@@ -179,7 +184,8 @@ router.put("/:id", async (req, res) => {
   const values = [
     member_id,
     name,
-    whatsapp,
+    email,
+    phone,
     join_date,
     expiry_date,
     package,
@@ -201,8 +207,61 @@ router.put("/:id", async (req, res) => {
   ];
 
   try {
+    // Get the old member data to check if payment amount changed
+    const [oldMemberRows] = await db.query('SELECT paid_amount, total_amount, email, member_id FROM members WHERE id = ?', [req.params.id]);
+    const oldMember = oldMemberRows[0];
+    
     await db.query(sql, values);
     await logActivity(created_by, 'edit', 'member', req.params.id, `Edited member: ${name}`);
+    
+    // Send payment confirmation email and create finance transaction if paid_amount increased
+    if (paid_amount > oldMember.paid_amount) {
+      const paymentAmount = paid_amount - oldMember.paid_amount;
+      
+      // Create finance transaction for the payment
+      try {
+        const financeSql = `
+          INSERT INTO finances (date, type, amount, category, payment, description, created_by)
+          VALUES (NOW(), 'income', ?, 'Membership', 'Cash', ?, ?)
+        `;
+        const financeValues = [
+          paymentAmount,
+          `Membership payment for ${name} (${member_id}) - Payment: ₹${paymentAmount}, Total Paid: ₹${paid_amount}`,
+          created_by || 'admin'
+        ];
+        
+        await db.query(financeSql, financeValues);
+        console.log(`✅ Finance transaction created for payment: ₹${paymentAmount} from ${name}`);
+      } catch (financeError) {
+        console.error('Failed to create finance transaction:', financeError);
+        // Don't fail the update if finance transaction fails
+      }
+      
+      // Send payment confirmation WhatsApp message if phone exists
+      if (phone) {
+        const paymentData = {
+          name: name,
+          phone: phone,
+          member_id: member_id,
+          payment_amount: paymentAmount,
+          payment_date: new Date().toISOString(),
+          payment_method: 'Cash', // Default, can be made configurable
+          previous_due: oldMember.total_amount - oldMember.paid_amount,
+          remaining_due: total_amount - paid_amount,
+          total_amount: total_amount,
+          total_paid: paid_amount
+        };
+        
+        try {
+          await sendPaymentConfirmationMessage(paymentData);
+          console.log(`✅ Payment confirmation WhatsApp message sent to ${name} (${phone})`);
+        } catch (whatsappError) {
+          console.error('Failed to send payment confirmation WhatsApp message:', whatsappError);
+          // Don't fail the update if WhatsApp fails
+        }
+      }
+    }
+    
     res.json({ message: "✅ Member updated" });
   } catch (err) {
     console.error("❌ Error updating member:", err);
@@ -319,34 +378,33 @@ router.post('/delete', async (req, res) => {
 });
 
 // ============================
-// POST - Manual Welcome SMS
+// POST - Manual Welcome WhatsApp Message
 // ============================
 router.post("/send-welcome/:id", async (req, res) => {
   try {
     const [results] = await db.query(
-      "SELECT name, whatsapp, package, expiry_date FROM members WHERE id = ?",
+      "SELECT name, phone, package, expiry_date, member_id, join_date, total_amount, paid_amount FROM members WHERE id = ?",
       [req.params.id]
     );
 
     if (results.length === 0)
       return res.status(404).json({ error: "Member not found" });
 
-    const { name, whatsapp, package, expiry_date } = results[0];
+    const memberData = results[0];
 
-    await axios.get("https://www.fast2sms.com/dev/bulkV2", {
-      params: {
-        authorization: process.env.FAST2SMS_API_KEY,
-        sender_id: "FSTSMS",
-        message: `Hi ${name}, welcome to the gym! Package: ${package}. Valid till ${expiry_date}.`,
-        language: "english",
-        route: "q",
-        numbers: whatsapp,
-      },
-    });
+    if (!memberData.phone) {
+      return res.status(400).json({ error: "Member has no phone number" });
+    }
 
-    res.json({ message: "✅ Welcome SMS sent manually." });
+    const result = await sendWelcomeMessage(memberData);
+    
+    if (result.success) {
+      res.json({ message: "✅ Welcome WhatsApp message sent manually." });
+    } else {
+      res.status(500).json({ error: "WhatsApp failed", detail: result.error });
+    }
   } catch (err) {
-    res.status(500).json({ error: "SMS failed", detail: err.message });
+    res.status(500).json({ error: "WhatsApp failed", detail: err.message });
   }
 });
 
@@ -356,32 +414,32 @@ router.post("/send-welcome/:id", async (req, res) => {
 router.post("/send-reminder/:id", async (req, res) => {
   try {
     const [results] = await db.query(
-      "SELECT name, whatsapp, expiry_date FROM members WHERE id = ?",
+      "SELECT name, phone, expiry_date FROM members WHERE id = ?",
       [req.params.id]
     );
 
     if (results.length === 0)
       return res.status(404).json({ error: "Member not found" });
 
-    const { name, whatsapp, expiry_date } = results[0];
+    const { name, phone, expiry_date } = results[0];
+    
+    if (!phone) {
+      return res.status(400).json({ error: "Member has no phone number" });
+    }
+
     const daysLeft = Math.ceil(
       (new Date(expiry_date) - new Date()) / (1000 * 60 * 60 * 24)
     );
 
-    await axios.get("https://www.fast2sms.com/dev/bulkV2", {
-      params: {
-        authorization: process.env.FAST2SMS_API_KEY,
-        sender_id: "FSTSMS",
-        message: `Reminder: Hi ${name}, your gym membership expires in ${daysLeft} day(s) on ${expiry_date}.`,
-        language: "english",
-        route: "q",
-        numbers: whatsapp,
-      },
-    });
-
-    res.json({ message: "✅ Reminder SMS sent manually." });
+    const result = await sendExpiryReminderMessage({ name, phone, expiry_date }, daysLeft);
+    
+    if (result.success) {
+      res.json({ message: "✅ Reminder WhatsApp message sent manually." });
+    } else {
+      res.status(500).json({ error: "Reminder WhatsApp failed", detail: result.error });
+    }
   } catch (err) {
-    res.status(500).json({ error: "Reminder SMS failed", detail: err.message });
+    res.status(500).json({ error: "Reminder WhatsApp failed", detail: err.message });
   }
 });
 
@@ -390,14 +448,15 @@ router.post("/send-reminder/:id", async (req, res) => {
 // ============================
 router.get("/send-expiry-reminders", async (req, res) => {
   const sql = `
-    SELECT id, name, whatsapp, expiry_date FROM members
+    SELECT id, name, phone, expiry_date FROM members
     WHERE DATEDIFF(expiry_date, CURDATE()) IN (7, 5, 3, 2, 1)
+    AND phone IS NOT NULL AND phone != ''
   `;
 
   try {
     const [members] = await db.query(sql);
     if (members.length === 0)
-      return res.json({ message: "No expiring members found." });
+      return res.json({ message: "No expiring members with phone numbers found." });
 
     let sent = 0;
 
@@ -406,23 +465,16 @@ router.get("/send-expiry-reminders", async (req, res) => {
         (new Date(m.expiry_date) - new Date()) / (1000 * 60 * 60 * 24)
       );
       try {
-        await axios.get("https://www.fast2sms.com/dev/bulkV2", {
-          params: {
-            authorization: process.env.FAST2SMS_API_KEY,
-            sender_id: "FSTSMS",
-            message: `Reminder: Hi ${m.name}, your gym membership expires in ${daysLeft} day(s) on ${m.expiry_date}.`,
-            language: "english",
-            route: "q",
-            numbers: m.whatsapp,
-          },
-        });
-        sent++;
+        const result = await sendExpiryReminderMessage({ name: m.name, phone: m.phone, expiry_date: m.expiry_date }, daysLeft);
+        if (result.success) {
+          sent++;
+        }
       } catch (e) {
-        console.error(`❌ Failed to send SMS to ${m.name}:`, e.message);
+        console.error(`❌ Failed to send WhatsApp to ${m.name}:`, e.message);
       }
     }
 
-    res.json({ message: `✅ Sent ${sent} reminder(s)` });
+    res.json({ message: `✅ Sent ${sent} reminder WhatsApp message(s)` });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

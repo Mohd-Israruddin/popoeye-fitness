@@ -4,6 +4,7 @@ const cors = require("cors");
 require("dotenv").config();
 const cron = require("node-cron");
 const axios = require("axios");
+const { sendExpiryReminderMessage } = require("./services/whatsappService");
 
 const app = express();
 app.use(cors());
@@ -43,7 +44,7 @@ app.get("/", (req, res) => {
   res.send("Gym Backend Running...");
 });
 
-// ✅ Cron Job: Automatic Expiry Reminder SMS (7, 5, 3, 2, 1 days)
+// ✅ Cron Job: Automatic Expiry Reminder WhatsApp (7, 5, 3, 2, 1 days)
 cron.schedule("0 10 * * *", async () => {
   const daysArray = [1, 2, 3, 5, 7];
   const today = new Date();
@@ -54,25 +55,20 @@ cron.schedule("0 10 * * *", async () => {
     const formattedDate = targetDate.toISOString().split("T")[0];
 
     try {
-      const [results] = await db.execute("SELECT name, whatsapp, expiry_date FROM members WHERE expiry_date = ?", [formattedDate]);
+      const [results] = await db.execute("SELECT name, phone, expiry_date FROM members WHERE expiry_date = ? AND phone IS NOT NULL AND phone != ''", [formattedDate]);
       
       if (results.length === 0) continue;
 
       for (const member of results) {
         try {
-          await axios.get("https://www.fast2sms.com/dev/bulkV2", {
-            params: {
-              authorization: process.env.FAST2SMS_API_KEY,
-              sender_id: "FSTSMS",
-              message: `Hi ${member.name}, your gym membership expires in ${daysLeft} day(s) on ${member.expiry_date}.`,
-              language: "english",
-              route: "q",
-              numbers: member.whatsapp,
-            },
-          });
-          console.log(`⏰ Reminder sent to ${member.name} (${daysLeft} days left)`);
-        } catch (smsErr) {
-          console.error(`❌ Reminder SMS failed for ${member.name}:`, smsErr.message);
+          const result = await sendExpiryReminderMessage({ name: member.name, phone: member.phone, expiry_date: member.expiry_date }, daysLeft);
+          if (result.success) {
+            console.log(`⏰ Reminder WhatsApp sent to ${member.name} (${daysLeft} days left)`);
+          } else {
+            console.error(`❌ Reminder WhatsApp failed for ${member.name}:`, result.error);
+          }
+        } catch (whatsappErr) {
+          console.error(`❌ Reminder WhatsApp failed for ${member.name}:`, whatsappErr.message);
         }
       }
     } catch (err) {
