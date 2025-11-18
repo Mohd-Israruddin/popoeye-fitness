@@ -18,8 +18,7 @@ function getApiBaseUrl() {
     }
     
     // For production, use the Render backend URL
-    // Update this if your backend URL is different
-    return 'https://gym-backend.onrender.com';
+    return 'https://solsparrow-backend.onrender.com';
   }
   
   // Fallback for SSR or other environments
