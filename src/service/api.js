@@ -1,8 +1,32 @@
 import axios from 'axios';
 
 // Configure axios to use the backend server
-// Use environment variable for production, fallback to localhost for development
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+// Priority: 1. Environment variable (build-time), 2. Runtime detection, 3. Default production URL, 4. Localhost
+function getApiBaseUrl() {
+  // Check for build-time environment variable first
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL;
+  }
+  
+  // Runtime detection: check if we're on localhost
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    
+    // If on localhost, use localhost backend
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      return 'http://localhost:5000';
+    }
+    
+    // For production, use the Render backend URL
+    // Update this if your backend URL is different
+    return 'https://gym-backend.onrender.com';
+  }
+  
+  // Fallback for SSR or other environments
+  return 'http://localhost:5000';
+}
+
+const API_BASE_URL = getApiBaseUrl();
 axios.defaults.baseURL = `${API_BASE_URL}/api`;
 
 // Add request interceptor for debugging
