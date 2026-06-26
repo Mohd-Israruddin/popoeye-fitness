@@ -4,7 +4,7 @@ import "./Sidebar.css";
 import {
   FaTachometerAlt, FaUsers, FaCalendarAlt, FaBoxOpen, FaDollarSign, 
   FaCog, FaChartLine, FaUserTie, FaQuestionCircle, FaBars, FaTimes, 
-  FaChevronDown, FaChevronRight, FaInstagram, FaEnvelope, FaDumbbell
+  FaChevronDown, FaChevronRight, FaInstagram, FaEnvelope, FaDumbbell, FaFingerprint
 } from "react-icons/fa";
 import { useAuth } from '../../data/AuthContext';
 
@@ -43,6 +43,7 @@ const Sidebar = () => {
   // Add admin-only links
   const adminLinks = [
     { to: "/insights", icon: <FaChartLine />, text: "Business Insights" },
+    { to: "/biometric", icon: <FaFingerprint />, text: "Biometric" },
   ];
   
   const closeSidebarOnMobile = () => {

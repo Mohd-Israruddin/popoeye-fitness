@@ -1,4 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import api from "../../service/api";
+import { getMemberPhotoUrl } from "../../utils/memberPhoto";
 import "./MemberForm.css";
 
 const generateMemberId = () => `M${Date.now()}`;
@@ -6,6 +8,7 @@ const generateMemberId = () => `M${Date.now()}`;
 const initialData = {
   member_id: "",
   name: "",
+  photo: "",
   email: "",
   phone: "",
   package: "",
@@ -21,6 +24,10 @@ const initialData = {
 
 const MemberForm = ({ member, onSave, onClose }) => {
   const [data, setData] = useState(member || initialData);
+  const [photoFile, setPhotoFile] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef(null);
 
   // Set initial data: existing member or new member with generated ID
   useEffect(() => {
@@ -30,8 +37,12 @@ const MemberForm = ({ member, onSave, onClose }) => {
         join_date: member.join_date ? new Date(member.join_date).toISOString().split("T")[0] : "",
         expiry_date: member.expiry_date ? new Date(member.expiry_date).toISOString().split("T")[0] : "",
       });
+      setPhotoPreview(member.photo || "");
+      setPhotoFile(null);
     } else {
       setData({ ...initialData, member_id: generateMemberId() });
+      setPhotoPreview("");
+      setPhotoFile(null);
     }
   }, [member]);
 
@@ -62,16 +73,91 @@ const MemberForm = ({ member, onSave, onClose }) => {
     setData((prev) => ({ ...prev, [name]: val }));
   };
 
-  const handleSubmit = (e) => {
+  const handlePhotoChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      alert("Please select an image file.");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      alert("Image must be smaller than 5MB.");
+      return;
+    }
+
+    setPhotoFile(file);
+    setPhotoPreview(URL.createObjectURL(file));
+  };
+
+  const handleRemovePhoto = () => {
+    setPhotoFile(null);
+    setPhotoPreview("");
+    setData((prev) => ({ ...prev, photo: "" }));
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    onSave(data);
-    onClose();
+    setUploading(true);
+
+    try {
+      let photoUrl = data.photo || "";
+
+      if (photoFile) {
+        const formData = new FormData();
+        formData.append("photo", photoFile);
+        formData.append("member_id", data.member_id);
+        const res = await api.post("/members/photo/upload", formData);
+        photoUrl = res.data.url;
+      }
+
+      onSave({ ...data, photo: photoUrl });
+      onClose();
+    } catch (error) {
+      console.error("Error saving member photo:", error);
+      alert(error.response?.data?.error || "Failed to upload photo. Please try again.");
+    } finally {
+      setUploading(false);
+    }
   };
 
   return (
     <div className="members-form-overlay">
       <form className="members-form-modal" onSubmit={handleSubmit}>
         <h3 className="members-form-title">{member ? "Edit Member" : "Add Member"}</h3>
+
+        <div className="members-form-photo-section">
+          <div className="members-form-photo-preview">
+            <img
+              src={photoFile ? photoPreview : getMemberPhotoUrl(data.photo, data.name)}
+              alt={data.name || "Member"}
+              className="members-form-photo-img"
+            />
+          </div>
+          <div className="members-form-photo-actions">
+            <label className="members-form-photo-upload-btn">
+              {photoPreview ? "Change Photo" : "Upload Photo"}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handlePhotoChange}
+                hidden
+              />
+            </label>
+            {(photoPreview || data.photo) && (
+              <button
+                type="button"
+                className="members-form-photo-remove-btn"
+                onClick={handleRemovePhoto}
+              >
+                Remove
+              </button>
+            )}
+            <p className="members-form-photo-hint">JPG, PNG or WebP. Max 5MB.</p>
+          </div>
+        </div>
 
         <div className="members-form-grid">
           <div className="members-form-group members-form-span-2">
@@ -103,21 +189,7 @@ const MemberForm = ({ member, onSave, onClose }) => {
           </div>
 
           <div className="members-form-group members-form-span-2">
-            <label htmlFor="email">Email Address</label>
-            <input
-              id="email"
-              name="email"
-              value={data.email}
-              onChange={handleChange}
-              placeholder="member@example.com"
-              type="email"
-              required
-              className="members-form-input"
-            />
-          </div>
-
-          <div className="members-form-group members-form-span-2">
-            <label htmlFor="phone">Phone Number</label>
+            <label htmlFor="phone">Phone Number (WhatsApp)</label>
             <input
               id="phone"
               name="phone"
@@ -127,6 +199,20 @@ const MemberForm = ({ member, onSave, onClose }) => {
               pattern="^\d{10}$"
               title="Enter a valid 10-digit number"
               type="text"
+              required
+              className="members-form-input"
+            />
+          </div>
+
+          <div className="members-form-group members-form-span-2">
+            <label htmlFor="email">Email Address (optional)</label>
+            <input
+              id="email"
+              name="email"
+              value={data.email}
+              onChange={handleChange}
+              placeholder="member@example.com"
+              type="email"
               className="members-form-input"
             />
           </div>
@@ -261,8 +347,8 @@ const MemberForm = ({ member, onSave, onClose }) => {
         </div>
 
         <div className="members-form-buttons">
-          <button type="submit" className="members-form-btn members-form-btn-primary">
-            {member ? "Update Member" : "Add Member"}
+          <button type="submit" className="members-form-btn members-form-btn-primary" disabled={uploading}>
+            {uploading ? "Uploading..." : member ? "Update Member" : "Add Member"}
           </button>
           <button type="button" onClick={onClose} className="members-form-btn members-form-btn-secondary">
             Cancel

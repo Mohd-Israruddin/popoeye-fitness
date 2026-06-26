@@ -56,6 +56,7 @@ const ViewFinance = () => {
   const [editCredentials, setEditCredentials] = useState({});
 
   const [dateRange, setDateRange] = useState({ from: '', to: '' });
+  const [timePeriod, setTimePeriod] = useState('all'); // 'all', 'weekly', 'monthly', 'yearly'
 
   const [exportModalOpen, setExportModalOpen] = useState(false);
   const [exportFilters, setExportFilters] = useState({ from: '', to: '', type: 'all' });
@@ -191,20 +192,63 @@ const ViewFinance = () => {
     }
   };
 
-  // Calculate financial metrics
-  const totalIncome = entries
+  // Calculate date range based on time period
+  const getDateRangeForPeriod = (period) => {
+    const today = new Date();
+    let startDate = null;
+    let endDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    endDate.setHours(23, 59, 59, 999);
+
+    switch (period) {
+      case 'weekly':
+        startDate = new Date(today);
+        startDate.setDate(today.getDate() - 7);
+        startDate.setHours(0, 0, 0, 0);
+        break;
+      case 'monthly':
+        startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+        startDate.setHours(0, 0, 0, 0);
+        break;
+      case 'yearly':
+        startDate = new Date(today.getFullYear(), 0, 1);
+        startDate.setHours(0, 0, 0, 0);
+        break;
+      default:
+        return { startDate: null, endDate: null };
+    }
+    return { startDate, endDate };
+  };
+
+  const filteredEntries = entries.filter((e) => {
+    // Type filter
+    if (filter !== "all" && e.type !== filter) return false;
+    
+    // Time period filter
+    if (timePeriod !== 'all') {
+      const { startDate, endDate } = getDateRangeForPeriod(timePeriod);
+      if (startDate && endDate) {
+        const entryDate = new Date(e.date);
+        if (entryDate < startDate || entryDate > endDate) return false;
+      }
+    }
+    
+    return true;
+  });
+
+  // Calculate financial metrics based on filtered entries
+  const totalIncome = filteredEntries
     .filter((e) => e.type === "income")
     .reduce((acc, curr) => acc + Number(curr.amount), 0);
 
-  const totalExpense = entries
+  const totalExpense = filteredEntries
     .filter((e) => e.type === "expense")
     .reduce((acc, curr) => acc + Number(curr.amount), 0);
 
   const balance = totalIncome - totalExpense;
 
-  // Count recurring transactions
-  const recurringCount = entries.filter(e => isRecurringTransaction(e)).length;
-  const totalRecurringAmount = entries
+  // Count recurring transactions (from filtered entries)
+  const recurringCount = filteredEntries.filter(e => isRecurringTransaction(e)).length;
+  const totalRecurringAmount = filteredEntries
     .filter(e => isRecurringTransaction(e))
     .reduce((acc, curr) => acc + Number(curr.amount), 0);
 
@@ -222,9 +266,6 @@ const ViewFinance = () => {
   // Calculate profit/loss from calculator
   const calculatedProfit = (Number(calculatorInputs.totalRevenue) + Number(calculatorInputs.otherIncome)) - 
                           (Number(calculatorInputs.totalExpenses) + Number(calculatorInputs.otherExpenses));
-
-  const filteredEntries =
-    filter === "all" ? entries : entries.filter((e) => e.type === filter);
 
   const handleEdit = (index) => {
     setEditIndex(index);
@@ -634,25 +675,57 @@ const ViewFinance = () => {
 
       {/* Filter Section */}
       <div className="filter-section">
-        <div className="filter-buttons">
-          <button 
-            onClick={() => setFilter("all")}
-            className={filter === "all" ? "active" : ""}
-          >
-            All Entries
-          </button>
-          <button 
-            onClick={() => setFilter("income")}
-            className={filter === "income" ? "active" : ""}
-          >
-            Income Only
-          </button>
-          <button 
-            onClick={() => setFilter("expense")}
-            className={filter === "expense" ? "active" : ""}
-          >
-            Expenses Only
-          </button>
+        <div className="filter-group">
+          <h3 className="filter-group-title">Type Filter</h3>
+          <div className="filter-buttons">
+            <button 
+              onClick={() => setFilter("all")}
+              className={filter === "all" ? "active" : ""}
+            >
+              All Entries
+            </button>
+            <button 
+              onClick={() => setFilter("income")}
+              className={filter === "income" ? "active" : ""}
+            >
+              Income Only
+            </button>
+            <button 
+              onClick={() => setFilter("expense")}
+              className={filter === "expense" ? "active" : ""}
+            >
+              Expenses Only
+            </button>
+          </div>
+        </div>
+        <div className="filter-group">
+          <h3 className="filter-group-title">Time Period</h3>
+          <div className="filter-buttons">
+            <button 
+              onClick={() => setTimePeriod("all")}
+              className={timePeriod === "all" ? "active" : ""}
+            >
+              <FaCalendarAlt /> All Time
+            </button>
+            <button 
+              onClick={() => setTimePeriod("weekly")}
+              className={timePeriod === "weekly" ? "active" : ""}
+            >
+              <FaCalendarAlt /> Weekly
+            </button>
+            <button 
+              onClick={() => setTimePeriod("monthly")}
+              className={timePeriod === "monthly" ? "active" : ""}
+            >
+              <FaCalendarAlt /> Monthly
+            </button>
+            <button 
+              onClick={() => setTimePeriod("yearly")}
+              className={timePeriod === "yearly" ? "active" : ""}
+            >
+              <FaCalendarAlt /> Yearly
+            </button>
+          </div>
         </div>
       </div>
 

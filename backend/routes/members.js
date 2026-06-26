@@ -1,10 +1,50 @@
 require("dotenv").config(); // 🔑 Load environment variables
 
 const express = require("express");
+const multer = require("multer");
 const router = express.Router();
 const db = require("../db");
 const bcrypt = require("bcryptjs");
-const { sendWelcomeMessage, sendExpiryReminderMessage, sendPaymentConfirmationMessage } = require("../services/whatsappService");
+const { sendWelcomeMessage, sendExpiryReminderMessage } = require("../services/whatsappService");
+const {
+  isConfigured,
+  uploadMemberPhoto,
+  deleteImage,
+  getPublicIdFromUrl,
+} = require("../services/cloudinaryService");
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (file.mimetype.startsWith("image/")) cb(null, true);
+    else cb(new Error("Only image files are allowed"));
+  },
+});
+
+// ============================
+// POST - Upload member photo to Cloudinary
+// ============================
+router.post("/photo/upload", upload.single("photo"), async (req, res) => {
+  if (!isConfigured()) {
+    return res.status(503).json({ error: "Cloudinary is not configured on the server." });
+  }
+  if (!req.file) {
+    return res.status(400).json({ error: "No photo file provided." });
+  }
+
+  try {
+    const memberId = req.body.member_id || null;
+    const result = await uploadMemberPhoto(req.file.buffer, memberId);
+    res.json({
+      url: result.secure_url,
+      publicId: result.public_id,
+    });
+  } catch (err) {
+    console.error("❌ Photo upload failed:", err);
+    res.status(500).json({ error: err.message || "Failed to upload photo." });
+  }
+});
 
 // ============================
 // GET all members
@@ -43,6 +83,7 @@ router.post("/", async (req, res) => {
     health_issues,
     blood_group,
     extra_details,
+    photo,
     created_by,
   } = req.body;
 
@@ -50,12 +91,13 @@ router.post("/", async (req, res) => {
 
   const sql = `
     INSERT INTO members 
-    (member_id, name, email, phone, join_date, expiry_date, package, total_amount, paid_amount, pending_amount, height, weight, chest, waist, hips, biceps, thighs, address, health_issues, blood_group, extra_details)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    (member_id, name, photo, email, phone, join_date, expiry_date, package, total_amount, paid_amount, pending_amount, height, weight, chest, waist, hips, biceps, thighs, address, health_issues, blood_group, extra_details)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `;
   const values = [
     member_id,
     name,
+    photo || null,
     email,
     phone,
     join_date,
@@ -103,7 +145,7 @@ router.post("/", async (req, res) => {
       );
     }
 
-    // ✅ Send Welcome WhatsApp Message
+    // ✅ Send Welcome WhatsApp (if phone is provided)
     if (phone) {
       try {
         await sendWelcomeMessage({
@@ -116,7 +158,7 @@ router.post("/", async (req, res) => {
           total_amount,
           paid_amount
         });
-        console.log("✅ Welcome WhatsApp message sent to", phone);
+        console.log("✅ Welcome WhatsApp sent to", phone);
       } catch (whatsappErr) {
         console.error("❌ WhatsApp failed:", whatsappErr.message);
       }
@@ -156,6 +198,7 @@ router.put("/:id", async (req, res) => {
     health_issues,
     blood_group,
     extra_details,
+    photo,
     created_by,
     admin_code
   } = req.body;
@@ -173,7 +216,7 @@ router.put("/:id", async (req, res) => {
 
   const sql = `
     UPDATE members SET 
-      member_id = ?, name = ?, email = ?, phone = ?, 
+      member_id = ?, name = ?, photo = ?, email = ?, phone = ?, 
       join_date = ?, expiry_date = ?, package = ?, 
       total_amount = ?, paid_amount = ?, pending_amount = ?,
       height = ?, weight = ?, chest = ?, waist = ?, hips = ?, biceps = ?, thighs = ?,
@@ -184,6 +227,7 @@ router.put("/:id", async (req, res) => {
   const values = [
     member_id,
     name,
+    photo || null,
     email,
     phone,
     join_date,
@@ -208,10 +252,15 @@ router.put("/:id", async (req, res) => {
 
   try {
     // Get the old member data to check if payment amount changed
-    const [oldMemberRows] = await db.query('SELECT paid_amount, total_amount, email, member_id FROM members WHERE id = ?', [req.params.id]);
+    const [oldMemberRows] = await db.query('SELECT paid_amount, total_amount, email, member_id, photo FROM members WHERE id = ?', [req.params.id]);
     const oldMember = oldMemberRows[0];
     
     await db.query(sql, values);
+
+    if (photo && oldMember.photo && photo !== oldMember.photo) {
+      const oldPublicId = getPublicIdFromUrl(oldMember.photo);
+      if (oldPublicId) await deleteImage(oldPublicId);
+    }
     await logActivity(created_by, 'edit', 'member', req.params.id, `Edited member: ${name}`);
     
     // Send payment confirmation email and create finance transaction if paid_amount increased
@@ -235,30 +284,6 @@ router.put("/:id", async (req, res) => {
       } catch (financeError) {
         console.error('Failed to create finance transaction:', financeError);
         // Don't fail the update if finance transaction fails
-      }
-      
-      // Send payment confirmation WhatsApp message if phone exists
-      if (phone) {
-        const paymentData = {
-          name: name,
-          phone: phone,
-          member_id: member_id,
-          payment_amount: paymentAmount,
-          payment_date: new Date().toISOString(),
-          payment_method: 'Cash', // Default, can be made configurable
-          previous_due: oldMember.total_amount - oldMember.paid_amount,
-          remaining_due: total_amount - paid_amount,
-          total_amount: total_amount,
-          total_paid: paid_amount
-        };
-        
-        try {
-          await sendPaymentConfirmationMessage(paymentData);
-          console.log(`✅ Payment confirmation WhatsApp message sent to ${name} (${phone})`);
-        } catch (whatsappError) {
-          console.error('Failed to send payment confirmation WhatsApp message:', whatsappError);
-          // Don't fail the update if WhatsApp fails
-        }
       }
     }
     
@@ -378,7 +403,7 @@ router.post('/delete', async (req, res) => {
 });
 
 // ============================
-// POST - Manual Welcome WhatsApp Message
+// POST - Manual Welcome WhatsApp
 // ============================
 router.post("/send-welcome/:id", async (req, res) => {
   try {
@@ -399,7 +424,7 @@ router.post("/send-welcome/:id", async (req, res) => {
     const result = await sendWelcomeMessage(memberData);
     
     if (result.success) {
-      res.json({ message: "✅ Welcome WhatsApp message sent manually." });
+      res.json({ message: "✅ Welcome WhatsApp sent." });
     } else {
       res.status(500).json({ error: "WhatsApp failed", detail: result.error });
     }
@@ -409,7 +434,7 @@ router.post("/send-welcome/:id", async (req, res) => {
 });
 
 // ============================
-// POST - Manual Expiry Reminder
+// POST - Manual Expiry Reminder WhatsApp
 // ============================
 router.post("/send-reminder/:id", async (req, res) => {
   try {
@@ -434,7 +459,7 @@ router.post("/send-reminder/:id", async (req, res) => {
     const result = await sendExpiryReminderMessage({ name, phone, expiry_date }, daysLeft);
     
     if (result.success) {
-      res.json({ message: "✅ Reminder WhatsApp message sent manually." });
+      res.json({ message: "✅ Reminder WhatsApp sent." });
     } else {
       res.status(500).json({ error: "Reminder WhatsApp failed", detail: result.error });
     }
@@ -444,12 +469,12 @@ router.post("/send-reminder/:id", async (req, res) => {
 });
 
 // ============================
-// GET - Bulk Expiry Reminder
+// GET - Bulk Expiry Reminder WhatsApp
 // ============================
 router.get("/send-expiry-reminders", async (req, res) => {
   const sql = `
     SELECT id, name, phone, expiry_date FROM members
-    WHERE DATEDIFF(expiry_date, CURDATE()) IN (7, 5, 3, 2, 1)
+    WHERE DATEDIFF(expiry_date, CURDATE()) IN (7, 3, 1)
     AND phone IS NOT NULL AND phone != ''
   `;
 

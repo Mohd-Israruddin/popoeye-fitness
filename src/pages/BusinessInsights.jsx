@@ -16,7 +16,7 @@ import {
   Legend,
   Filler,
 } from "chart.js";
-import { FaUsers, FaArrowUp, FaArrowDown, FaChartBar, FaChartPie, FaDollarSign } from 'react-icons/fa';
+import { FaUsers, FaArrowUp, FaArrowDown, FaChartBar, FaChartPie, FaDollarSign, FaCalendarAlt } from 'react-icons/fa';
 import api from '../service/api';
 import eventBus from '../service/event-bus';
 import { toast } from 'react-toastify';
@@ -61,6 +61,7 @@ const BusinessInsights = () => {
   });
   const alertShownRef = useRef(false);
   const [members, setMembers] = useState([]);
+  const [timePeriod, setTimePeriod] = useState('monthly'); // 'weekly', 'monthly', 'yearly'
 
   useEffect(() => {
     if (userRole !== "admin") {
@@ -68,15 +69,47 @@ const BusinessInsights = () => {
     }
   }, [navigate]);
 
+  // Calculate date range based on time period
+  const getDateRangeForPeriod = (period) => {
+    const today = new Date();
+    let startDate = null;
+    let endDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    endDate.setHours(23, 59, 59, 999);
+
+    switch (period) {
+      case 'weekly':
+        startDate = new Date(today);
+        startDate.setDate(today.getDate() - 7);
+        startDate.setHours(0, 0, 0, 0);
+        break;
+      case 'monthly':
+        startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+        startDate.setHours(0, 0, 0, 0);
+        break;
+      case 'yearly':
+        startDate = new Date(today.getFullYear(), 0, 1);
+        startDate.setHours(0, 0, 0, 0);
+        break;
+      default:
+        return { startDate: null, endDate: null };
+    }
+    return { startDate, endDate };
+  };
+
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
+      const { startDate, endDate } = getDateRangeForPeriod(timePeriod);
+      const dateParams = startDate && endDate 
+        ? `?start_date=${startDate.toISOString().split('T')[0]}&end_date=${endDate.toISOString().split('T')[0]}`
+        : '';
+      
       const [statsRes, historyRes, memberRes, expenseRes, metricsRes, noteRes] = await Promise.all([
-        api.get('/insights/key-stats'),
-        api.get('/insights/income-expense-history'),
+        api.get(`/insights/key-stats${dateParams}`),
+        api.get(`/insights/income-expense-history${dateParams}`),
         api.get('/insights/member-distribution'),
-        api.get('/insights/expense-breakdown'),
-        api.post('/insights/financial-metrics', {}),
+        api.get(`/insights/expense-breakdown${dateParams}`),
+        api.post('/insights/financial-metrics', { startDate, endDate }),
         api.get('/insights/notes')
       ]);
       
@@ -121,7 +154,7 @@ const BusinessInsights = () => {
     return () => {
       eventBus.remove('expense-added', handleExpenseAdded);
     };
-  }, [fetchData]);
+  }, [fetchData, timePeriod]);
 
   const handleSaveExpenseLimit = async () => {
     try {
@@ -270,6 +303,31 @@ const BusinessInsights = () => {
       <div className="hero-section">
         <h1>Business Insights</h1>
         <p>An overview of your gym's performance and key metrics.</p>
+      </div>
+
+      {/* Time Period Filter */}
+      <div className="time-period-filter">
+        <h3 className="filter-title">Time Period</h3>
+        <div className="filter-buttons">
+          <button 
+            onClick={() => setTimePeriod("weekly")}
+            className={timePeriod === "weekly" ? "active" : ""}
+          >
+            <FaCalendarAlt /> Weekly
+          </button>
+          <button 
+            onClick={() => setTimePeriod("monthly")}
+            className={timePeriod === "monthly" ? "active" : ""}
+          >
+            <FaCalendarAlt /> Monthly
+          </button>
+          <button 
+            onClick={() => setTimePeriod("yearly")}
+            className={timePeriod === "yearly" ? "active" : ""}
+          >
+            <FaCalendarAlt /> Yearly
+          </button>
+        </div>
       </div>
 
       <div>

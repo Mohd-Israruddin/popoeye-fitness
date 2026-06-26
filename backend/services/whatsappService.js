@@ -1,350 +1,128 @@
-const twilio = require('twilio');
+const axios = require('axios');
 require('dotenv').config();
 
-// Initialize Twilio client
-const getTwilioClient = () => {
-  const accountSid = process.env.TWILIO_ACCOUNT_SID;
-  const authToken = process.env.TWILIO_AUTH_TOKEN;
-  
-  if (!accountSid || !authToken) {
-    throw new Error('Twilio credentials not configured. Please set TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN in your .env file');
-  }
-  
-  return twilio(accountSid, authToken);
-};
+const FAST2SMS_WHATSAPP_URL = 'https://www.fast2sms.com/dev/whatsapp';
 
-// Helper function to format phone number for WhatsApp
-const formatPhoneNumber = (phone) => {
+function isConfigured() {
+  return Boolean(
+    process.env.FAST2SMS_API_KEY &&
+    process.env.FAST2SMS_PHONE_NUMBER_ID
+  );
+}
+
+function formatPhoneNumber(phone) {
   if (!phone) return null;
-  
-  // Remove all non-digit characters
-  let cleaned = phone.replace(/\D/g, '');
-  
-  // If phone starts with country code, use as is
-  // Otherwise, assume it's a local number and add country code from env
-  if (cleaned.length >= 10) {
-    // If it doesn't start with country code, add it
-    if (!cleaned.startsWith(process.env.WHATSAPP_COUNTRY_CODE || '91')) {
-      cleaned = (process.env.WHATSAPP_COUNTRY_CODE || '91') + cleaned;
-    }
-    return `whatsapp:+${cleaned}`;
-  }
-  
-  return null;
-};
 
-// Send welcome WhatsApp message to new member
+  let cleaned = String(phone).replace(/\D/g, '');
+
+  if (cleaned.length === 10) {
+    return cleaned;
+  }
+
+  const countryCode = process.env.FAST2SMS_COUNTRY_CODE || '91';
+  if (cleaned.startsWith(countryCode) && cleaned.length > 10) {
+    return cleaned.slice(countryCode.length);
+  }
+
+  return cleaned.length >= 10 ? cleaned.slice(-10) : null;
+}
+
+async function sendWhatsAppTemplate(messageId, phone, variables = []) {
+  if (!isConfigured()) {
+    throw new Error('Fast2SMS is not configured. Set FAST2SMS_API_KEY and FAST2SMS_PHONE_NUMBER_ID in .env');
+  }
+
+  if (!messageId) {
+    throw new Error('WhatsApp template ID is not configured for this message type');
+  }
+
+  const formattedPhone = formatPhoneNumber(phone);
+  if (!formattedPhone) {
+    return { success: false, error: 'Invalid phone number' };
+  }
+
+  const params = {
+    authorization: process.env.FAST2SMS_API_KEY,
+    message_id: messageId,
+    phone_number_id: process.env.FAST2SMS_PHONE_NUMBER_ID,
+    numbers: formattedPhone,
+  };
+
+  if (variables.length > 0) {
+    params.variables_values = variables.map((v) => (v == null ? '' : String(v))).join('|');
+  }
+
+  try {
+    const { data } = await axios.get(FAST2SMS_WHATSAPP_URL, { params });
+
+    if (data?.status === true || data?.return === true) {
+      return { success: true, requestId: data.request_id || data.requestId };
+    }
+
+    const errorMessage = data?.message || data?.msg || JSON.stringify(data);
+    console.error('❌ Fast2SMS WhatsApp error:', errorMessage);
+    return { success: false, error: errorMessage };
+  } catch (error) {
+    const detail = error.response?.data?.message || error.message;
+    console.error('❌ Fast2SMS WhatsApp request failed:', detail);
+    return { success: false, error: detail };
+  }
+}
+
+function getGymName() {
+  return process.env.GYM_NAME || 'Our Gym';
+}
+
+function getContactPhone() {
+  return process.env.CONTACT_PHONE || 'our gym';
+}
+
+// Template variable order must match your approved Fast2SMS WhatsApp templates
 const sendWelcomeMessage = async (memberData) => {
-  try {
-    const client = getTwilioClient();
-    const fromNumber = process.env.TWILIO_WHATSAPP_NUMBER; // Format: whatsapp:+14155238886
-    const toNumber = formatPhoneNumber(memberData.phone);
-    
-    if (!toNumber) {
-      return { success: false, error: 'Invalid phone number' };
-    }
-    
-    const message = `🎉 *Welcome to ${process.env.GYM_NAME || 'Our Gym'}!*
+  const result = await sendWhatsAppTemplate(
+    process.env.FAST2SMS_TEMPLATE_WELCOME,
+    memberData.phone,
+    [
+      memberData.name,
+      memberData.member_id,
+      memberData.package,
+      memberData.join_date,
+      memberData.expiry_date,
+      memberData.total_amount,
+      memberData.paid_amount,
+      getGymName(),
+    ]
+  );
 
-Dear ${memberData.name},
-
-Welcome to our gym family! We're excited to have you join us.
-
-*Your Membership Details:*
-• Member ID: ${memberData.member_id}
-• Package: ${memberData.package}
-• Join Date: ${memberData.join_date}
-• Expiry Date: ${memberData.expiry_date}
-• Total Amount: ₹${memberData.total_amount}
-• Paid Amount: ₹${memberData.paid_amount}
-
-We look forward to helping you achieve your fitness goals!
-
-Best regards,
-The ${process.env.GYM_NAME || 'Gym'} Team`;
-
-    const result = await client.messages.create({
-      from: fromNumber,
-      to: toNumber,
-      body: message
-    });
-
-    console.log('✅ Welcome WhatsApp message sent to', memberData.phone);
-    return { success: true, messageId: result.sid };
-  } catch (error) {
-    console.error('❌ Failed to send welcome WhatsApp message:', error.message);
-    return { success: false, error: error.message };
+  if (result.success) {
+    console.log('✅ Welcome WhatsApp sent to', memberData.phone);
   }
+  return result;
 };
 
-// Send expiry reminder WhatsApp message
 const sendExpiryReminderMessage = async (memberData, daysLeft) => {
-  try {
-    const client = getTwilioClient();
-    const fromNumber = process.env.TWILIO_WHATSAPP_NUMBER;
-    const toNumber = formatPhoneNumber(memberData.phone);
-    
-    if (!toNumber) {
-      return { success: false, error: 'Invalid phone number' };
-    }
-    
-    const message = `⏰ *Membership Expiry Reminder*
+  const result = await sendWhatsAppTemplate(
+    process.env.FAST2SMS_TEMPLATE_EXPIRY,
+    memberData.phone,
+    [
+      memberData.name,
+      daysLeft,
+      memberData.expiry_date,
+      getContactPhone(),
+      getGymName(),
+    ]
+  );
 
-Dear ${memberData.name},
-
-This is a friendly reminder that your gym membership will expire in *${daysLeft} day(s)* on *${memberData.expiry_date}*.
-
-⚠️ *Action Required*
-To continue enjoying our facilities, please renew your membership before the expiry date.
-
-Contact us at ${process.env.CONTACT_PHONE || 'our gym'} for renewal assistance.
-
-Thank you for being a valued member!
-
-Best regards,
-The ${process.env.GYM_NAME || 'Gym'} Team`;
-
-    const result = await client.messages.create({
-      from: fromNumber,
-      to: toNumber,
-      body: message
-    });
-
-    console.log(`✅ Expiry reminder WhatsApp message sent to ${memberData.name} (${daysLeft} days left)`);
-    return { success: true, messageId: result.sid };
-  } catch (error) {
-    console.error(`❌ Failed to send expiry reminder WhatsApp message to ${memberData.name}:`, error.message);
-    return { success: false, error: error.message };
+  if (result.success) {
+    console.log(`✅ Expiry WhatsApp sent to ${memberData.name} (${daysLeft} days left)`);
   }
-};
-
-// Send schedule booking confirmation WhatsApp message
-const sendScheduleBookingMessage = async (bookingData) => {
-  try {
-    const client = getTwilioClient();
-    const fromNumber = process.env.TWILIO_WHATSAPP_NUMBER;
-    const toNumber = formatPhoneNumber(bookingData.phone);
-    
-    if (!toNumber) {
-      return { success: false, error: 'Invalid phone number' };
-    }
-    
-    const message = `✅ *Class Booking Confirmed!*
-
-Dear ${bookingData.member_name},
-
-Your class booking has been confirmed. We look forward to seeing you!
-
-*Class Details:*
-• Class: ${bookingData.category}
-• Date: ${new Date(bookingData.date).toLocaleDateString()}
-• Time: ${bookingData.time}
-• Trainer: ${bookingData.trainer || 'TBA'}
-
-📝 *Reminder:* Please arrive 10 minutes before your class starts.
-
-If you need to cancel or reschedule, please contact us at ${process.env.CONTACT_PHONE || 'our gym'}.
-
-Thank you for choosing ${process.env.GYM_NAME || 'our gym'}!
-
-Best regards,
-The ${process.env.GYM_NAME || 'Gym'} Team`;
-
-    const result = await client.messages.create({
-      from: fromNumber,
-      to: toNumber,
-      body: message
-    });
-
-    console.log('✅ Schedule booking WhatsApp message sent to', bookingData.phone);
-    return { success: true, messageId: result.sid };
-  } catch (error) {
-    console.error('❌ Failed to send schedule booking WhatsApp message:', error.message);
-    return { success: false, error: error.message };
-  }
-};
-
-// Send schedule update WhatsApp message
-const sendScheduleUpdateMessage = async (bookingData, changes) => {
-  try {
-    const client = getTwilioClient();
-    const fromNumber = process.env.TWILIO_WHATSAPP_NUMBER;
-    const toNumber = formatPhoneNumber(bookingData.phone);
-    
-    if (!toNumber) {
-      return { success: false, error: 'Invalid phone number' };
-    }
-    
-    const message = `🔄 *Class Schedule Updated*
-
-Dear ${bookingData.member_name},
-
-Your class schedule has been updated. Here are the new details:
-
-*Updated Class Details:*
-• Class: ${bookingData.category}
-• Date: ${new Date(bookingData.date).toLocaleDateString()}
-• Time: ${bookingData.time}
-• Trainer: ${bookingData.trainer || 'TBA'}
-
-${changes ? `*Changes Made:*
-${changes}` : ''}
-
-If you have any questions about these changes, please contact us at ${process.env.CONTACT_PHONE || 'our gym'}.
-
-Best regards,
-The ${process.env.GYM_NAME || 'Gym'} Team`;
-
-    const result = await client.messages.create({
-      from: fromNumber,
-      to: toNumber,
-      body: message
-    });
-
-    console.log('✅ Schedule update WhatsApp message sent to', bookingData.phone);
-    return { success: true, messageId: result.sid };
-  } catch (error) {
-    console.error('❌ Failed to send schedule update WhatsApp message:', error.message);
-    return { success: false, error: error.message };
-  }
-};
-
-// Send schedule cancellation WhatsApp message
-const sendScheduleCancellationMessage = async (bookingData) => {
-  try {
-    const client = getTwilioClient();
-    const fromNumber = process.env.TWILIO_WHATSAPP_NUMBER;
-    const toNumber = formatPhoneNumber(bookingData.phone);
-    
-    if (!toNumber) {
-      return { success: false, error: 'Invalid phone number' };
-    }
-    
-    const message = `❌ *Class Booking Cancelled*
-
-Dear ${bookingData.member_name},
-
-Your class booking has been cancelled. We're sorry for any inconvenience.
-
-*Cancelled Class Details:*
-• Class: ${bookingData.category}
-• Date: ${new Date(bookingData.date).toLocaleDateString()}
-• Time: ${bookingData.time}
-• Trainer: ${bookingData.trainer || 'TBA'}
-
-💡 *Need to reschedule?* Contact us at ${process.env.CONTACT_PHONE || 'our gym'} to book a new class.
-
-We hope to see you in another class soon!
-
-Best regards,
-The ${process.env.GYM_NAME || 'Gym'} Team`;
-
-    const result = await client.messages.create({
-      from: fromNumber,
-      to: toNumber,
-      body: message
-    });
-
-    console.log('✅ Schedule cancellation WhatsApp message sent to', bookingData.phone);
-    return { success: true, messageId: result.sid };
-  } catch (error) {
-    console.error('❌ Failed to send schedule cancellation WhatsApp message:', error.message);
-    return { success: false, error: error.message };
-  }
-};
-
-// Send payment confirmation WhatsApp message
-const sendPaymentConfirmationMessage = async (paymentData) => {
-  try {
-    const client = getTwilioClient();
-    const fromNumber = process.env.TWILIO_WHATSAPP_NUMBER;
-    const toNumber = formatPhoneNumber(paymentData.phone);
-    
-    if (!toNumber) {
-      return { success: false, error: 'Invalid phone number' };
-    }
-    
-    const message = `💰 *Payment Confirmation*
-
-Dear ${paymentData.name},
-
-Thank you for your payment! We have successfully received your payment and updated your account.
-
-*Payment Details:*
-• Member ID: ${paymentData.member_id}
-• Payment Amount: ₹${paymentData.payment_amount}
-• Payment Date: ${new Date(paymentData.payment_date).toLocaleDateString()}
-• Payment Method: ${paymentData.payment_method || 'Cash'}
-• Previous Due: ₹${paymentData.previous_due}
-• Remaining Due: ₹${paymentData.remaining_due}
-
-*Account Summary:*
-• Total Amount: ₹${paymentData.total_amount}
-• Total Paid: ₹${paymentData.total_paid}
-• Remaining Due: ₹${paymentData.remaining_due}
-
-${paymentData.remaining_due > 0 ? 
-  '⚠️ *Note:* You still have a remaining balance. Please clear it before your membership expires.' :
-  '✅ *Great!* Your account is fully paid up!'}
-
-Thank you for being a valued member of ${process.env.GYM_NAME || 'our gym'}!
-
-If you have any questions about this payment, please contact us at ${process.env.CONTACT_PHONE || 'our gym'}.
-
-Best regards,
-The ${process.env.GYM_NAME || 'Gym'} Team`;
-
-    const result = await client.messages.create({
-      from: fromNumber,
-      to: toNumber,
-      body: message
-    });
-
-    console.log('✅ Payment confirmation WhatsApp message sent to', paymentData.phone);
-    return { success: true, messageId: result.sid };
-  } catch (error) {
-    console.error('❌ Failed to send payment confirmation WhatsApp message:', error.message);
-    return { success: false, error: error.message };
-  }
-};
-
-// Send custom WhatsApp message
-const sendCustomMessage = async (to, message) => {
-  try {
-    const client = getTwilioClient();
-    const fromNumber = process.env.TWILIO_WHATSAPP_NUMBER;
-    const toNumber = formatPhoneNumber(to);
-    
-    if (!toNumber) {
-      return { success: false, error: 'Invalid phone number' };
-    }
-    
-    const fullMessage = `${message}
-
-Best regards,
-The ${process.env.GYM_NAME || 'Gym'} Team`;
-
-    const result = await client.messages.create({
-      from: fromNumber,
-      to: toNumber,
-      body: fullMessage
-    });
-
-    console.log('✅ Custom WhatsApp message sent to', to);
-    return { success: true, messageId: result.sid };
-  } catch (error) {
-    console.error('❌ Failed to send custom WhatsApp message:', error.message);
-    return { success: false, error: error.message };
-  }
+  return result;
 };
 
 module.exports = {
+  isConfigured,
+  formatPhoneNumber,
+  sendWhatsAppTemplate,
   sendWelcomeMessage,
   sendExpiryReminderMessage,
-  sendScheduleBookingMessage,
-  sendScheduleUpdateMessage,
-  sendScheduleCancellationMessage,
-  sendPaymentConfirmationMessage,
-  sendCustomMessage
 };
-

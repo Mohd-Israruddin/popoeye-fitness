@@ -6,7 +6,7 @@ import MemberForm from "../assets/components/MemberForm";
 import BodyMeasurementsForm from "../assets/components/BodyMeasurementsForm";
 import AdminPasskeyModal from '../assets/components/AdminPasskeyModal';
 import { FaUserPlus, FaEnvelope, FaUsers, FaUserTimes, FaUserClock, FaChartBar, FaFilter } from "react-icons/fa";
-import { FiUsers, FiUserCheck, FiUserX, FiAlertTriangle, FiMail, FiPlus } from 'react-icons/fi';
+import { FiUsers, FiUserCheck, FiUserX, FiAlertTriangle, FiMessageCircle, FiPlus } from 'react-icons/fi';
 import "./Members.css";
 import COLORS from "../data/colors";
 
@@ -19,8 +19,8 @@ const Members = () => {
   const [bodyMember, setBodyMember] = useState(null);
   const [activeFilter, setActiveFilter] = useState('all');
   const [packageFilter, setPackageFilter] = useState('all');
-  const [emailLoading, setEmailLoading] = useState(false);
-  const [emailMessage, setEmailMessage] = useState("");
+  const [whatsappLoading, setWhatsappLoading] = useState(false);
+  const [whatsappMessage, setWhatsappMessage] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [showCodeModal, setShowCodeModal] = useState(false);
   const [pendingEdit, setPendingEdit] = useState(null);
@@ -148,17 +148,17 @@ const Members = () => {
     }
   };
 
-  const handleEmailReminders = async () => {
-    setEmailLoading(true);
-    setEmailMessage("");
+  const handleWhatsappReminders = async () => {
+    setWhatsappLoading(true);
+    setWhatsappMessage("");
     try {
       const res = await api.get("/members/send-expiry-reminders");
-      setEmailMessage(res.data.message || "Email reminders sent successfully!");
+      setWhatsappMessage(res.data.message || "WhatsApp reminders sent successfully!");
     } catch (error) {
-      setEmailMessage("Failed to send email reminders.");
-      console.error("Failed to send email reminders:", error);
+      setWhatsappMessage("Failed to send WhatsApp reminders.");
+      console.error("Failed to send WhatsApp reminders:", error);
     } finally {
-      setEmailLoading(false);
+      setWhatsappLoading(false);
     }
   };
 
@@ -193,9 +193,9 @@ const Members = () => {
             <p>An overview of your gym's membership status.</p>
           </div>
           <div className="members-action-buttons">
-            <button className="members-btn" onClick={handleEmailReminders} disabled={emailLoading}>
-              <FiMail />
-              <span>{emailLoading ? 'Sending...' : 'Send Email Reminders'}</span>
+            <button className="members-btn" onClick={handleWhatsappReminders} disabled={whatsappLoading}>
+              <FiMessageCircle />
+              <span>{whatsappLoading ? 'Sending...' : 'Send WhatsApp Reminders'}</span>
             </button>
             <button className="members-btn members-btn-primary" onClick={() => setShowForm(true)}>
               <FiPlus />
@@ -280,9 +280,9 @@ const Members = () => {
       </div>
 
       {/* Email Message */}
-      {emailMessage && (
-        <div className={`members-email-message ${emailMessage.includes('Failed') ? 'error' : 'success'}`}>
-          {emailMessage}
+      {whatsappMessage && (
+        <div className={`members-sms-message ${whatsappMessage.includes('Failed') ? 'error' : 'success'}`}>
+          {whatsappMessage}
         </div>
       )}
 

@@ -263,11 +263,25 @@
   box-shadow: 0 2px 12px #0004;
   padding: 1.5rem 1rem;
   margin-bottom: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+.view-finance-page .filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.view-finance-page .filter-group-title {
+  color: #28B295;
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin: 0;
 }
 .view-finance-page .filter-buttons {
   display: flex;
   gap: 1rem;
-  margin-bottom: 1rem;
+  flex-wrap: wrap;
 }
 .view-finance-page .filter-buttons button {
   background: #23272f;
@@ -279,6 +293,9 @@
   padding: 10px 20px;
   cursor: pointer;
   transition: all 0.18s;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 .view-finance-page .filter-buttons button.active,
 .view-finance-page .filter-buttons button:hover {

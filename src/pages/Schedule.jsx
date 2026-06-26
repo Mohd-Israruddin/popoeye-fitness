@@ -25,7 +25,7 @@ const categoryLimits = {
 const Schedule = () => {
   const [bookings, setBookings] = useState({});
   const [selectedSlot, setSelectedSlot] = useState(null);
-  const [form, setForm] = useState({ member: "", category: "Yoga", trainer: "", email: "" });
+  const [form, setForm] = useState({ member: "", category: "Yoga", trainer: "", phone: "" });
   const [members, setMembers] = useState([]);
   const [trainers, setTrainers] = useState([]);
   const [newMember, setNewMember] = useState("");
@@ -82,7 +82,7 @@ const Schedule = () => {
 
   const handleSlotClick = (day, time) => {
     setSelectedSlot({ day, time });
-    setForm({ member: "", category: "Yoga", trainer: "", email: "" });
+    setForm({ member: "", category: "Yoga", trainer: "", phone: "" });
     setEditIndex(null);
     setReminder(`Don't forget to assign trainer and confirm category.`);
   };
@@ -92,11 +92,11 @@ const Schedule = () => {
     setForm((prev) => {
       const newForm = { ...prev, [name]: value };
       
-      // Auto-populate email when member is selected
+      // Auto-populate phone when member is selected
       if (name === "member" && value) {
         const selectedMember = members.find(m => m.name === value);
-        if (selectedMember && selectedMember.email) {
-          newForm.email = selectedMember.email;
+        if (selectedMember && selectedMember.phone) {
+          newForm.phone = selectedMember.phone;
         }
       }
       
@@ -155,7 +155,7 @@ const Schedule = () => {
         setSuccessMessage(`Booking successful for ${form.member} in ${form.category}`);
       }
 
-      setForm({ member: "", category: "Yoga", trainer: "", email: "" });
+      setForm({ member: "", category: "Yoga", trainer: "", phone: "" });
       setSelectedSlot(null);
       setEditIndex(null);
       setReminder("");
@@ -247,7 +247,7 @@ const Schedule = () => {
       member: booking.member,
       category: booking.category,
       trainer: booking.trainer,
-      email: booking.email || ""
+      phone: booking.phone || booking.email || ""
     });
     setEditIndex(index);
     setReminder("Editing existing booking...");
@@ -459,13 +459,14 @@ const Schedule = () => {
               </div>
 
               <div className="form-group">
-                  <label>Email Address</label>
+                  <label>WhatsApp Number</label>
                   <input 
-                    type="email" 
-                    name="email" 
-                    value={form.email} 
+                    type="tel" 
+                    name="phone" 
+                    value={form.phone} 
                     onChange={handleInputChange}
-                    placeholder="Enter member's email address"
+                    placeholder="10-digit phone for WhatsApp"
+                    pattern="^\d{10}$"
                   />
               </div>
 

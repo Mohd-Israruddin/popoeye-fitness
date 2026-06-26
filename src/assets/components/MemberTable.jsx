@@ -4,6 +4,7 @@ import "./MemberTable.css";
 import { FaEdit, FaTrash, FaStickyNote, FaUser, FaEnvelope, FaDumbbell, FaCommentDots, FaWeight, FaCommentAlt, FaRulerHorizontal } from 'react-icons/fa';
 import AdminPasskeyModal from './AdminPasskeyModal';
 import { useAuth } from '../../data/AuthContext';
+import { getMemberPhotoUrl } from '../../utils/memberPhoto';
 
 const MemberTable = ({ members, onEdit, onDelete, onOpenBodyMeasurements }) => {
   const [expandedId, setExpandedId] = useState(null);
@@ -39,28 +40,28 @@ const MemberTable = ({ members, onEdit, onDelete, onOpenBodyMeasurements }) => {
     }
   };
 
-  const handleSendEmail = async (member) => {
-    if (!member.email) {
-      alert(`⚠️ ${member.name} has no email address.`);
+  const handleSendWhatsapp = async (member) => {
+    if (!member.phone) {
+      alert(`⚠️ ${member.name} has no phone number.`);
       return;
     }
 
     try {
-      const res = await api.post("/members/send-welcome/" + member.id);
-      alert(`✅ Welcome email sent to ${member.name}`);
+      await api.post("/members/send-welcome/" + member.id);
+      alert(`✅ Welcome WhatsApp sent to ${member.name}`);
     } catch (error) {
-      console.error("Email Error:", error);
-      alert(`❌ Failed to send email to ${member.name}`);
+      console.error("WhatsApp Error:", error);
+      alert(`❌ Failed to send WhatsApp to ${member.name}`);
     }
   };
 
-  const handleSendBulkEmail = async () => {
+  const handleSendBulkWhatsapp = async () => {
     try {
       const res = await api.get("/members/send-expiry-reminders");
-      alert(res.data.message || "✅ Email reminders sent.");
+      alert(res.data.message || "✅ WhatsApp reminders sent.");
     } catch (error) {
-      console.error("Bulk email error:", error);
-      alert("❌ Failed to send bulk email reminders.");
+      console.error("Bulk WhatsApp error:", error);
+      alert("❌ Failed to send bulk WhatsApp reminders.");
     }
   };
 
@@ -112,6 +113,8 @@ const MemberTable = ({ members, onEdit, onDelete, onOpenBodyMeasurements }) => {
     return `₹${parseFloat(amount || 0).toLocaleString()}`;
   };
 
+  const getMemberPhoto = (member) => getMemberPhotoUrl(member.photo, member.name);
+
   const handleActionClick = (e, action) => {
     e.stopPropagation();
     action();
@@ -155,10 +158,10 @@ const MemberTable = ({ members, onEdit, onDelete, onOpenBodyMeasurements }) => {
             <>
               <button
                 className="members-bulk-sms-btn"
-                onClick={handleSendBulkEmail}
+                onClick={handleSendBulkWhatsapp}
               >
                 <FaCommentDots />
-                <span>Send Email Reminders ({selected.length})</span>
+                <span>Send WhatsApp Reminders ({selected.length})</span>
               </button>
               <button
                 className="members-bulk-delete-btn"
@@ -180,9 +183,10 @@ const MemberTable = ({ members, onEdit, onDelete, onOpenBodyMeasurements }) => {
           <thead>
             <tr>
               <th className="members-checkbox-header"></th>
+              <th>Photo</th>
               <th>Member ID</th>
               <th>Name</th>
-              <th>Email</th>
+              <th>Phone</th>
               <th>Package</th>
               <th>Join Date</th>
               <th>Expiry Date</th>
@@ -210,12 +214,19 @@ const MemberTable = ({ members, onEdit, onDelete, onOpenBodyMeasurements }) => {
                         onChange={(e) => handleSelect(e, member.id)}
                       />
                     </td>
+                    <td className="members-photo-cell">
+                      <img
+                        src={getMemberPhoto(member)}
+                        alt={member.name}
+                        className="members-avatar"
+                      />
+                    </td>
                     <td className="members-id-cell">{member.member_id}</td>
                     <td className="members-name-cell">{member.name}</td>
                     <td>
-                      <a href={`mailto:${member.email}`} className="members-email-link">
-                        <FaEnvelope /> {member.email || 'N/A'}
-                      </a>
+                      <span className="members-phone-link">
+                        <FaCommentDots /> {member.phone || 'N/A'}
+                      </span>
                     </td>
                     <td>{member.package}</td>
                     <td>{formatDate(member.join_date)}</td>
@@ -228,9 +239,9 @@ const MemberTable = ({ members, onEdit, onDelete, onOpenBodyMeasurements }) => {
                     <td className="members-actions-cell">
                       <div className="members-action-buttons">
                         <button
-                          onClick={(e) => handleActionClick(e, () => handleSendEmail(member))}
-                          className="members-action-btn members-action-btn-email"
-                          title="Send Email"
+                          onClick={(e) => handleActionClick(e, () => handleSendWhatsapp(member))}
+                          className="members-action-btn members-action-btn-sms"
+                          title="Send WhatsApp"
                         >
                           <FaCommentAlt />
                         </button>
@@ -260,11 +271,23 @@ const MemberTable = ({ members, onEdit, onDelete, onOpenBodyMeasurements }) => {
                   </tr>
                   {expandedId === member.id && (
                     <tr className="members-expanded-row">
-                      <td colSpan="11">
+                      <td colSpan="12">
                         <div className="members-details-expanded">
+                          <div className="members-expanded-profile">
+                            <img
+                              src={getMemberPhoto(member)}
+                              alt={member.name}
+                              className="members-expanded-photo"
+                            />
+                            <div>
+                              <h4>{member.name}</h4>
+                              <p>{member.member_id}</p>
+                            </div>
+                          </div>
                           <div className="members-details-grid">
                             <div className="members-detail-section">
                               <p><strong>Address:</strong> {member.address || "N/A"}</p>
+                              <p><strong>Phone:</strong> {member.phone || "N/A"}</p>
                               <p><strong>Email:</strong> {member.email || "N/A"}</p>
                               <p><strong>Health Issues:</strong> {member.health_issues || "N/A"}</p>
                               <p><strong>Blood Group:</strong> {member.blood_group || "N/A"}</p>

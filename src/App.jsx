@@ -20,6 +20,7 @@ import BusinessInsights from "./pages/BusinessInsights";
 import Help from "./pages/Help";
 import StaffLogin from "./pages/StaffLogin";
 import StaffLog from "./pages/Staff/StaffLog";
+import Biometric from "./pages/Biometric";
 
 // App Components
 import Sidebar from "./assets/components/Sidebar";
@@ -49,6 +50,7 @@ function AppContent() {
           <Route path="/finances/view" element={<ProtectedRoute adminOnly={true}><Sidebar /><FinanceProvider><ViewFinances /></FinanceProvider></ProtectedRoute>} />
           <Route path="/settings" element={<ProtectedRoute><Sidebar /><Settings /></ProtectedRoute>} />
           <Route path="/insights" element={<ProtectedRoute adminOnly={true}><Sidebar /><BusinessInsights /></ProtectedRoute>} />
+          <Route path="/biometric" element={<ProtectedRoute adminOnly={true}><Sidebar /><Biometric /></ProtectedRoute>} />
           <Route path="/help" element={<ProtectedRoute><Sidebar /><Help /></ProtectedRoute>} />
         </Routes>
       </main>

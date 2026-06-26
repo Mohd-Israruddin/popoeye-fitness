@@ -78,6 +78,49 @@
   color: var(--accent2);
 }
 
+.members-photo-cell {
+  width: 88px;
+  padding: 8px 12px !important;
+}
+
+.members-avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--primary);
+  display: block;
+}
+
+.members-expanded-profile {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.members-expanded-profile h4 {
+  margin: 0 0 0.25rem;
+  color: var(--primary);
+  font-size: 1.1rem;
+}
+
+.members-expanded-profile p {
+  margin: 0;
+  color: #9ca3af;
+  font-size: 0.85rem;
+}
+
+.members-expanded-photo {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid var(--primary);
+}
+
 /* Cell Content Styling */
 .members-name-cell {
   font-weight: 600;

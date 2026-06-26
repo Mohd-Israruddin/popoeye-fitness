@@ -5,6 +5,7 @@ require("dotenv").config();
 const cron = require("node-cron");
 const axios = require("axios");
 const { sendExpiryReminderMessage } = require("./services/whatsappService");
+const { getPushService } = require("./services/pushService");
 
 const app = express();
 app.use(cors());
@@ -25,6 +26,7 @@ const enquiryRoutes = require('./routes/enquiries');
 const insightsRoutes = require('./routes/insights');
 const adminRoutes = require('./routes/admin');
 const loginRoutes = require('./routes/login');
+const biometricRoutes = require('./routes/biometric');
 
 // ✅ Use routes
 app.use("/api/members", memberRoutes);
@@ -38,15 +40,16 @@ app.use('/api/enquiries', enquiryRoutes);
 app.use('/api/insights', insightsRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/login', loginRoutes);
+app.use('/api/biometric', biometricRoutes);
 
 // ✅ Root test route
 app.get("/", (req, res) => {
   res.send("Gym Backend Running...");
 });
 
-// ✅ Cron Job: Automatic Expiry Reminder WhatsApp (7, 5, 3, 2, 1 days)
+// ✅ Cron Job: Automatic Expiry Reminder WhatsApp (7, 3, 1 days)
 cron.schedule("0 10 * * *", async () => {
-  const daysArray = [1, 2, 3, 5, 7];
+  const daysArray = [1, 3, 7];
   const today = new Date();
 
   for (const daysLeft of daysArray) {
@@ -61,11 +64,11 @@ cron.schedule("0 10 * * *", async () => {
 
       for (const member of results) {
         try {
-          const result = await sendExpiryReminderMessage({ name: member.name, phone: member.phone, expiry_date: member.expiry_date }, daysLeft);
-          if (result.success) {
-            console.log(`⏰ Reminder WhatsApp sent to ${member.name} (${daysLeft} days left)`);
+          const whatsappResult = await sendExpiryReminderMessage({ name: member.name, phone: member.phone, expiry_date: member.expiry_date }, daysLeft);
+          if (whatsappResult.success) {
+            console.log(`📱 Reminder WhatsApp sent to ${member.name} (${daysLeft} days left)`);
           } else {
-            console.error(`❌ Reminder WhatsApp failed for ${member.name}:`, result.error);
+            console.error(`❌ Reminder WhatsApp failed for ${member.name}:`, whatsappResult.error);
           }
         } catch (whatsappErr) {
           console.error(`❌ Reminder WhatsApp failed for ${member.name}:`, whatsappErr.message);
@@ -87,6 +90,19 @@ cron.schedule("0 9 * * *", async () => {
     console.error('❌ Failed to process recurring transactions:', error.message);
   }
 });
+
+// ✅ Start Push Service for biometric devices (port 8081)
+const PUSH_SERVICE_PORT = process.env.PUSH_SERVICE_PORT || 8081;
+const pushService = getPushService(PUSH_SERVICE_PORT);
+
+pushService.start()
+  .then(() => {
+    console.log(`✅ Biometric Push Service started on port ${PUSH_SERVICE_PORT}`);
+  })
+  .catch((err) => {
+    console.error(`❌ Failed to start Push Service:`, err.message);
+    console.log(`⚠️  Push Service will not be available. You can use PULL method instead.`);
+  });
 
 // ✅ Start server
 const PORT = process.env.PORT || 5000;
