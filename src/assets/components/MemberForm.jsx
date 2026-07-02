@@ -199,7 +199,6 @@ const MemberForm = ({ member, onSave, onClose }) => {
               pattern="^\d{10}$"
               title="Enter a valid 10-digit number"
               type="text"
-              required
               className="members-form-input"
             />
           </div>
