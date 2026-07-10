@@ -3,8 +3,6 @@ import api from "../../service/api";
 import { getMemberPhotoUrl } from "../../utils/memberPhoto";
 import "./MemberForm.css";
 
-const generateMemberId = () => `M${Date.now()}`;
-
 const initialData = {
   member_id: "",
   name: "",
@@ -20,6 +18,7 @@ const initialData = {
   total_amount: 0,
   paid_amount: 0,
   extra_details: "",
+  personal_training: "No",
 };
 
 const MemberForm = ({ member, onSave, onClose }) => {
@@ -34,13 +33,22 @@ const MemberForm = ({ member, onSave, onClose }) => {
     if (member) {
       setData({
         ...member,
+        personal_training: member.personal_training === 'Yes' ? 'Yes' : 'No',
         join_date: member.join_date ? new Date(member.join_date).toISOString().split("T")[0] : "",
         expiry_date: member.expiry_date ? new Date(member.expiry_date).toISOString().split("T")[0] : "",
       });
       setPhotoPreview(member.photo || "");
       setPhotoFile(null);
     } else {
-      setData({ ...initialData, member_id: generateMemberId() });
+      const fetchNextId = async () => {
+        try {
+          const res = await api.get("/members/next-id");
+          setData({ ...initialData, member_id: res.data.member_id });
+        } catch {
+          setData({ ...initialData, member_id: "" });
+        }
+      };
+      fetchNextId();
       setPhotoPreview("");
       setPhotoFile(null);
     }
@@ -51,7 +59,11 @@ const MemberForm = ({ member, onSave, onClose }) => {
     if (data.package && data.join_date && data.package !== "custom") {
       const joinDate = new Date(data.join_date);
       let expiry = new Date(joinDate);
-      if (data.package === "1 month") {
+      if (data.package === "1 day") {
+        expiry.setDate(joinDate.getDate() + 1);
+      } else if (data.package === "1 week") {
+        expiry.setDate(joinDate.getDate() + 7);
+      } else if (data.package === "1 month") {
         expiry.setMonth(joinDate.getMonth() + 1);
       } else if (data.package === "3 month") {
         expiry.setMonth(joinDate.getMonth() + 3);
@@ -227,6 +239,8 @@ const MemberForm = ({ member, onSave, onClose }) => {
               className="members-form-select"
             >
               <option value="">Select package duration</option>
+              <option value="1 day">1 Day</option>
+              <option value="1 week">1 Week</option>
               <option value="1 month">1 Month</option>
               <option value="3 month">3 Months</option>
               <option value="6 month">6 Months</option>
@@ -260,6 +274,21 @@ const MemberForm = ({ member, onSave, onClose }) => {
               readOnly={data.package !== 'custom' && data.package !== ''}
               className="members-form-input"
             />
+          </div>
+
+          <div className="members-form-group members-form-span-2">
+            <label htmlFor="personal_training">Personal Training</label>
+            <select
+              id="personal_training"
+              name="personal_training"
+              value={data.personal_training || 'No'}
+              onChange={handleChange}
+              required
+              className="members-form-select"
+            >
+              <option value="No">No</option>
+              <option value="Yes">Yes</option>
+            </select>
           </div>
 
           <div className="members-form-group members-form-span-2">

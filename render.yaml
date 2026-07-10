@@ -35,7 +35,7 @@ services:
     staticPublishPath: ./dist
     envVars:
       - key: VITE_API_URL
-        value: https://solsparrow-backend.onrender.com
+        value: https://popoeye-fitness.onrender.com
 
 databases:
   - name: gym-database

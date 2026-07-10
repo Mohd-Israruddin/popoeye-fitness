@@ -5,7 +5,10 @@ const multer = require("multer");
 const router = express.Router();
 const db = require("../db");
 const bcrypt = require("bcryptjs");
-const { sendWelcomeMessage, sendExpiryReminderMessage } = require("../services/whatsappService");
+const { sendWelcomeMessage, sendExpiryReminderMessage, shouldSendExpiryReminder } = require("../services/whatsappService");
+const {
+  generateMemberInvoicePdf,
+} = require('../services/invoiceService');
 const {
   isConfigured,
   uploadMemberPhoto,
@@ -21,6 +24,19 @@ const upload = multer({
     else cb(new Error("Only image files are allowed"));
   },
 });
+
+(async () => {
+  try {
+    await db.query(
+      `ALTER TABLE members ADD COLUMN personal_training ENUM('Yes', 'No') NOT NULL DEFAULT 'No'`
+    );
+    console.log('✅ Added personal_training column to members');
+  } catch (err) {
+    if (err.code !== 'ER_DUP_FIELDNAME') {
+      console.error('❌ personal_training migration:', err.message);
+    }
+  }
+})();
 
 // ============================
 // POST - Upload member photo to Cloudinary
@@ -46,6 +62,26 @@ router.post("/photo/upload", upload.single("photo"), async (req, res) => {
   }
 });
 
+async function getNextMemberId() {
+  const [rows] = await db.query(
+    `SELECT MAX(CAST(member_id AS UNSIGNED)) AS max_id FROM members WHERE member_id REGEXP '^[0-9]+$'`
+  );
+  const nextNum = (rows[0]?.max_id || 0) + 1;
+  return String(nextNum).padStart(4, '0');
+}
+
+// ============================
+// GET next member ID
+// ============================
+router.get("/next-id", async (req, res) => {
+  try {
+    const member_id = await getNextMemberId();
+    res.json({ member_id });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ============================
 // GET all members
 // ============================
@@ -62,8 +98,8 @@ router.get("/", async (req, res) => {
 // POST - Add a new member + welcome email
 // ============================
 router.post("/", async (req, res) => {
+  const member_id = await getNextMemberId();
   const {
-    member_id,
     name,
     email,
     phone,
@@ -84,15 +120,17 @@ router.post("/", async (req, res) => {
     blood_group,
     extra_details,
     photo,
+    personal_training,
     created_by,
   } = req.body;
 
   const pending_amount = total_amount - paid_amount;
+  const ptValue = personal_training === 'Yes' ? 'Yes' : 'No';
 
   const sql = `
     INSERT INTO members 
-    (member_id, name, photo, email, phone, join_date, expiry_date, package, total_amount, paid_amount, pending_amount, height, weight, chest, waist, hips, biceps, thighs, address, health_issues, blood_group, extra_details)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    (member_id, name, photo, email, phone, join_date, expiry_date, package, total_amount, paid_amount, pending_amount, height, weight, chest, waist, hips, biceps, thighs, address, health_issues, blood_group, extra_details, personal_training)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `;
   const values = [
     member_id,
@@ -117,6 +155,7 @@ router.post("/", async (req, res) => {
     health_issues,
     blood_group,
     extra_details,
+    ptValue,
   ];
 
   try {
@@ -149,6 +188,7 @@ router.post("/", async (req, res) => {
     if (phone) {
       try {
         await sendWelcomeMessage({
+          id: result.insertId,
           name,
           phone,
           member_id,
@@ -156,7 +196,7 @@ router.post("/", async (req, res) => {
           join_date,
           expiry_date,
           total_amount,
-          paid_amount
+          paid_amount,
         });
         console.log("✅ Welcome WhatsApp sent to", phone);
       } catch (whatsappErr) {
@@ -199,20 +239,27 @@ router.put("/:id", async (req, res) => {
     blood_group,
     extra_details,
     photo,
+    personal_training,
     created_by,
-    admin_code
+    admin_code,
+    staff_code
   } = req.body;
 
-  // Require admin_code for edit
-  if (!admin_code) {
-    return res.status(403).json({ message: 'Admin ID required.' });
+  let valid = false;
+  if (admin_code) {
+    const [adminRows] = await db.query('SELECT id FROM admin_settings WHERE admin_code = ?', [admin_code]);
+    if (adminRows.length > 0) valid = true;
   }
-  const [adminRows] = await db.query('SELECT id FROM admin_settings WHERE admin_code = ?', [admin_code]);
-  if (adminRows.length === 0) {
-    return res.status(403).json({ message: 'Invalid admin ID.' });
+  if (staff_code) {
+    const [staffRows] = await db.query('SELECT id FROM staff WHERE staff_code = ?', [staff_code]);
+    if (staffRows.length > 0) valid = true;
+  }
+  if (!valid) {
+    return res.status(403).json({ message: 'Valid admin or staff ID required.' });
   }
 
   const pending_amount = total_amount - paid_amount;
+  const ptValue = personal_training === 'Yes' ? 'Yes' : 'No';
 
   const sql = `
     UPDATE members SET 
@@ -220,7 +267,7 @@ router.put("/:id", async (req, res) => {
       join_date = ?, expiry_date = ?, package = ?, 
       total_amount = ?, paid_amount = ?, pending_amount = ?,
       height = ?, weight = ?, chest = ?, waist = ?, hips = ?, biceps = ?, thighs = ?,
-      address = ?, health_issues = ?, blood_group = ?, extra_details = ?,
+      address = ?, health_issues = ?, blood_group = ?, extra_details = ?, personal_training = ?,
       updated_at = NOW()
     WHERE id = ?
   `;
@@ -247,6 +294,7 @@ router.put("/:id", async (req, res) => {
     health_issues,
     blood_group,
     extra_details,
+    ptValue,
     req.params.id,
   ];
 
@@ -415,7 +463,7 @@ router.post("/send-welcome/:id", async (req, res) => {
     if (results.length === 0)
       return res.status(404).json({ error: "Member not found" });
 
-    const memberData = results[0];
+    const memberData = { ...results[0], id: req.params.id };
 
     if (!memberData.phone) {
       return res.status(400).json({ error: "Member has no phone number" });
@@ -439,17 +487,23 @@ router.post("/send-welcome/:id", async (req, res) => {
 router.post("/send-reminder/:id", async (req, res) => {
   try {
     const [results] = await db.query(
-      "SELECT name, phone, expiry_date FROM members WHERE id = ?",
+      "SELECT name, phone, expiry_date, package FROM members WHERE id = ?",
       [req.params.id]
     );
 
     if (results.length === 0)
       return res.status(404).json({ error: "Member not found" });
 
-    const { name, phone, expiry_date } = results[0];
+    const { name, phone, expiry_date, package } = results[0];
     
     if (!phone) {
       return res.status(400).json({ error: "Member has no phone number" });
+    }
+
+    if (!shouldSendExpiryReminder(package)) {
+      return res.status(400).json({
+        error: "Expiry reminders are not sent for 1 day or 1 week packages",
+      });
     }
 
     const daysLeft = Math.ceil(
@@ -473,9 +527,10 @@ router.post("/send-reminder/:id", async (req, res) => {
 // ============================
 router.get("/send-expiry-reminders", async (req, res) => {
   const sql = `
-    SELECT id, name, phone, expiry_date FROM members
+    SELECT id, name, phone, expiry_date, package FROM members
     WHERE DATEDIFF(expiry_date, CURDATE()) IN (7, 3, 1)
     AND phone IS NOT NULL AND phone != ''
+    AND LOWER(TRIM(package)) NOT IN ('1 day', '1 week')
   `;
 
   try {
@@ -490,7 +545,10 @@ router.get("/send-expiry-reminders", async (req, res) => {
         (new Date(m.expiry_date) - new Date()) / (1000 * 60 * 60 * 24)
       );
       try {
-        const result = await sendExpiryReminderMessage({ name: m.name, phone: m.phone, expiry_date: m.expiry_date }, daysLeft);
+        const result = await sendExpiryReminderMessage(
+          { name: m.name, phone: m.phone, expiry_date: m.expiry_date, package: m.package },
+          daysLeft
+        );
         if (result.success) {
           sent++;
         }
@@ -502,6 +560,25 @@ router.get("/send-expiry-reminders", async (req, res) => {
     res.json({ message: `✅ Sent ${sent} reminder WhatsApp message(s)` });
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+// ============================
+// GET - Member invoice PDF (public link for WhatsApp)
+router.get('/:id/invoice', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const [rows] = await db.query('SELECT * FROM members WHERE id = ?', [id]);
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Member not found' });
+    }
+    generateMemberInvoicePdf(rows[0], res);
+  } catch (err) {
+    console.error('❌ Invoice PDF error:', err);
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Failed to generate invoice' });
+    }
   }
 });
 
@@ -517,6 +594,37 @@ router.get('/expiring-soon', async (req, res) => {
     res.json(rows);
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch expiring members', details: error.message });
+  }
+});
+
+// Endpoint to get members enrolled in personal training
+router.get('/personal-training', async (req, res) => {
+  try {
+    const [rows] = await db.query(`
+      SELECT id, name, member_id, phone, package, join_date, expiry_date, personal_training
+      FROM members
+      WHERE personal_training = 'Yes'
+      ORDER BY name ASC
+    `);
+    res.json(rows);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch personal training members', details: error.message });
+  }
+});
+
+// Endpoint to get members with pending/due payments
+router.get('/due-payments', async (req, res) => {
+  try {
+    const [rows] = await db.query(`
+      SELECT id, name, member_id, total_amount, paid_amount,
+        (total_amount - paid_amount) AS pending_amount
+      FROM members
+      WHERE (total_amount - paid_amount) > 0
+      ORDER BY (total_amount - paid_amount) DESC, name ASC
+    `);
+    res.json(rows);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch due payments', details: error.message });
   }
 });
 

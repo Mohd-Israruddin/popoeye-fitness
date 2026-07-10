@@ -136,6 +136,10 @@
   align-items: center;
   justify-content: center;
 }
+.members-stat-card.pt .members-stat-icon {
+  background: #D6F84C;
+  color: #23272f;
+}
 .members-stat-content {
   flex: 1;
   min-width: 0;

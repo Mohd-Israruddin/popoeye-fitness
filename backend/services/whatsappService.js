@@ -27,7 +27,7 @@ function formatPhoneNumber(phone) {
   return cleaned.length >= 10 ? cleaned.slice(-10) : null;
 }
 
-async function sendWhatsAppTemplate(messageId, phone, variables = []) {
+async function sendWhatsAppTemplate(messageId, phone, variables = [], options = {}) {
   if (!isConfigured()) {
     throw new Error('Fast2SMS is not configured. Set FAST2SMS_API_KEY and FAST2SMS_PHONE_NUMBER_ID in .env');
   }
@@ -50,6 +50,13 @@ async function sendWhatsAppTemplate(messageId, phone, variables = []) {
 
   if (variables.length > 0) {
     params.variables_values = variables.map((v) => (v == null ? '' : String(v))).join('|');
+  }
+
+  if (options.mediaUrl) {
+    params.media_url = options.mediaUrl;
+  }
+  if (options.documentFilename) {
+    params.document_filename = options.documentFilename;
   }
 
   try {
@@ -77,8 +84,26 @@ function getContactPhone() {
   return process.env.CONTACT_PHONE || 'our gym';
 }
 
+function isShortTermPackage(packageName) {
+  if (!packageName) return false;
+  const normalized = String(packageName).trim().toLowerCase();
+  return normalized === '1 day' || normalized === '1 week';
+}
+
+function shouldSendExpiryReminder(packageName) {
+  return !isShortTermPackage(packageName);
+}
+
 // Template variable order must match your approved Fast2SMS WhatsApp templates
 const sendWelcomeMessage = async (memberData) => {
+  const { getInvoiceUrl } = require('./invoiceService');
+  const options = {};
+
+  if (memberData.id != null && memberData.id !== 0) {
+    options.mediaUrl = getInvoiceUrl(memberData.id);
+    options.documentFilename = `invoice-${memberData.member_id || memberData.id}.pdf`;
+  }
+
   const result = await sendWhatsAppTemplate(
     process.env.FAST2SMS_TEMPLATE_WELCOME,
     memberData.phone,
@@ -86,12 +111,9 @@ const sendWelcomeMessage = async (memberData) => {
       memberData.name,
       memberData.member_id,
       memberData.package,
-      memberData.join_date,
-      memberData.expiry_date,
-      memberData.total_amount,
-      memberData.paid_amount,
       getGymName(),
-    ]
+    ],
+    options
   );
 
   if (result.success) {
@@ -101,6 +123,17 @@ const sendWelcomeMessage = async (memberData) => {
 };
 
 const sendExpiryReminderMessage = async (memberData, daysLeft) => {
+  if (!shouldSendExpiryReminder(memberData.package)) {
+    console.log(
+      `⏭️ Skipping expiry reminder for ${memberData.name} (${memberData.package} package)`
+    );
+    return {
+      success: false,
+      skipped: true,
+      error: 'Expiry reminders are not sent for 1 day or 1 week packages',
+    };
+  }
+
   const result = await sendWhatsAppTemplate(
     process.env.FAST2SMS_TEMPLATE_EXPIRY,
     memberData.phone,
@@ -125,4 +158,5 @@ module.exports = {
   sendWhatsAppTemplate,
   sendWelcomeMessage,
   sendExpiryReminderMessage,
+  shouldSendExpiryReminder,
 };

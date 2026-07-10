@@ -1,6 +1,6 @@
 const axios = require('axios');
 
-const BASE_URL = 'https://solsparrow-backend.onrender.com/api';
+const BASE_URL = 'https://popoeye-fitness.onrender.com/api';
 
 async function testBackend() {
   console.log('🧪 Testing Backend and Recurring Transactions\n');

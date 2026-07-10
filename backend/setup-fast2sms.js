@@ -98,6 +98,7 @@ async function runTestSend(testPhone) {
   console.log(`\n📤 Sending test welcome WhatsApp to ${testPhone}...`);
 
   const result = await sendWelcomeMessage({
+    id: 0,
     name: 'Test Member',
     phone: testPhone,
     member_id: 'TEST001',

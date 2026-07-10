@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Responsive, WidthProvider } from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
-import { FaUsers, FaDollarSign, FaUserTie, FaCalendarAlt, FaBoxOpen, FaClipboardList, FaInstagram, FaEnvelope, FaPlusCircle, FaClock } from 'react-icons/fa';
+import { FaUsers, FaDollarSign, FaUserTie, FaCalendarAlt, FaClipboardList, FaPlusCircle, FaClock } from 'react-icons/fa';
 import CountUp from 'react-countup';
 import { useNavigate } from 'react-router-dom';
 import api from '../service/api';
@@ -12,10 +12,11 @@ import FinancesWidget from '../assets/components/widgets/FinancesWidget';
 import StaffWidget from '../assets/components/widgets/StaffWidget';
 import EnquiriesWidget from '../assets/components/widgets/EnquiriesWidget';
 import ExpiringMembersWidget from '../assets/components/widgets/ExpiringMembersWidget';
+import DuePaymentsWidget from '../assets/components/widgets/DuePaymentsWidget';
+import PersonalTrainingWidget from '../assets/components/widgets/PersonalTrainingWidget';
 import AlertsWidget from '../assets/components/widgets/AlertsWidget';
 import NotesWidget from '../assets/components/widgets/NotesWidget';
 import ProfitLossWidget from '../assets/components/widgets/ProfitLossWidget';
-import ContactWidget from '../assets/components/widgets/ContactWidget';
 
 const ResponsiveGridLayout = WidthProvider(Responsive);
 
@@ -72,10 +73,11 @@ const Home = () => {
   const availableWidgets = React.useMemo(() => [
     { id: 'alerts', name: 'Alerts', component: <AlertsWidget />, defaultLayout: { w: 1, h: 2, x: 0, y: 0, minW: 1, minH: 2 } },
     { id: 'expiringMembers', name: 'Members Expiring Soon', component: <ExpiringMembersWidget />, defaultLayout: { w: 1, h: 2, x: 0, y: 2, minW: 1, minH: 2 } },
-    { id: 'staff', name: 'Staff Overview', component: <StaffWidget />, defaultLayout: { w: 1, h: 2, x: 0, y: 4, minW: 1, minH: 2 } },
-    { id: 'notes', name: 'Notes', component: <NotesWidget />, defaultLayout: { w: 1, h: 2, x: 1, y: 4, minW: 1, minH: 2 } },
-    { id: 'enquiries', name: 'Recent Enquiries', component: <EnquiriesWidget />, defaultLayout: { w: 1, h: 2, x: 0, y: 6, minW: 1, minH: 2 } },
-    { id: 'contact', name: 'Contact', component: <ContactWidget />, defaultLayout: { w: 1, h: 2, x: 1, y: 6, minW: 1, minH: 2 } },
+    { id: 'duePayments', name: 'Due Payments', component: <DuePaymentsWidget />, defaultLayout: { w: 1, h: 2, x: 1, y: 2, minW: 1, minH: 2 } },
+    { id: 'personalTraining', name: 'Personal Training', component: <PersonalTrainingWidget />, defaultLayout: { w: 1, h: 2, x: 0, y: 4, minW: 1, minH: 2 } },
+    { id: 'staff', name: 'Staff Overview', component: <StaffWidget />, defaultLayout: { w: 1, h: 2, x: 1, y: 4, minW: 1, minH: 2 } },
+    { id: 'notes', name: 'Notes', component: <NotesWidget />, defaultLayout: { w: 1, h: 2, x: 0, y: 6, minW: 1, minH: 2 } },
+    { id: 'enquiries', name: 'Recent Enquiries', component: <EnquiriesWidget />, defaultLayout: { w: 1, h: 2, x: 1, y: 6, minW: 1, minH: 2 } },
   ], []);
 
   // Fetch dashboard data
@@ -109,13 +111,21 @@ const Home = () => {
       }
 
       if (savedLayouts && savedLayouts.lg && savedLayouts.lg.length > 0) {
+        const duePaymentsWidget = availableWidgets.find(w => w.id === 'duePayments');
+        if (duePaymentsWidget && !savedLayouts.lg.some(l => l.i === 'duePayments')) {
+          savedLayouts.lg.push({ ...duePaymentsWidget.defaultLayout, i: 'duePayments' });
+        }
+        const personalTrainingWidget = availableWidgets.find(w => w.id === 'personalTraining');
+        if (personalTrainingWidget && !savedLayouts.lg.some(l => l.i === 'personalTraining')) {
+          savedLayouts.lg.push({ ...personalTrainingWidget.defaultLayout, i: 'personalTraining' });
+        }
         setLayouts(savedLayouts);
         const activeWidgets = savedLayouts.lg
           .map(layoutItem => availableWidgets.find(w => w.id === layoutItem.i))
           .filter(Boolean);
         setWidgets(activeWidgets);
       } else {
-        const defaultWidgets = availableWidgets.filter(w => ['alerts', 'expiringMembers', 'staff', 'notes', 'enquiries', 'contact'].includes(w.id));
+        const defaultWidgets = availableWidgets.filter(w => ['alerts', 'expiringMembers', 'duePayments', 'personalTraining', 'staff', 'notes', 'enquiries'].includes(w.id));
         setWidgets(defaultWidgets);
         const defaultLayouts = { lg: defaultWidgets.map(w => ({ ...w.defaultLayout, i: w.id })) };
         setLayouts(defaultLayouts);
@@ -148,7 +158,7 @@ const Home = () => {
       setStats(mockStats);
       setSchedule(mockSchedule);
       
-      const defaultWidgets = availableWidgets.filter(w => ['alerts', 'expiringMembers', 'staff', 'notes', 'enquiries', 'contact'].includes(w.id));
+      const defaultWidgets = availableWidgets.filter(w => ['alerts', 'expiringMembers', 'duePayments', 'personalTraining', 'staff', 'notes', 'enquiries'].includes(w.id));
       setWidgets(defaultWidgets);
       const defaultLayouts = { lg: defaultWidgets.map(w => ({ ...w.defaultLayout, i: w.id })) };
       setLayouts(defaultLayouts);
@@ -232,14 +242,13 @@ const Home = () => {
     { label: 'Add Member', icon: <FaUsers />, path: '/members' },
     { label: 'Add Finance', icon: <FaPlusCircle />, path: '/finances/add' },
     { label: 'Full Schedule', icon: <FaCalendarAlt />, path: '/schedule' },
-    { label: 'Inventory', icon: <FaBoxOpen />, path: '/inventory' },
     { label: 'Enquiries', icon: <FaClipboardList />, path: '/enquiries' },
   ];
 
   // Alerts box click handlers
   const handleAlertClick = (alert) => {
     if (alert.type === 'danger') {
-      navigate('/inventory');
+      navigate('/settings');
     } else if (alert.type === 'warning') {
       navigate('/members');
     } else if (alert.type === 'success') {
@@ -264,24 +273,6 @@ const Home = () => {
             <p className="dashboard-subtitle">
               Welcome back! Your gym's mission control. Customize your view below.
             </p>
-          </div>
-          <div className="contact-info-header">
-            <a
-              href="mailto:Solsparrowhq@gmail.com"
-              className="contact-link-header"
-              title="Email"
-            >
-              <FaEnvelope />
-            </a>
-            <a
-              href="https://www.instagram.com/solsparrow.co?igsh=OTR4cjNld3Zvdms4"
-              className="contact-link-header"
-              title="Instagram"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <FaInstagram />
-            </a>
           </div>
         </div>
       </div>

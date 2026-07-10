@@ -5,7 +5,8 @@ import SearchBar from "../assets/components/SearchBar";
 import MemberForm from "../assets/components/MemberForm";
 import BodyMeasurementsForm from "../assets/components/BodyMeasurementsForm";
 import AdminPasskeyModal from '../assets/components/AdminPasskeyModal';
-import { FaUserPlus, FaEnvelope, FaUsers, FaUserTimes, FaUserClock, FaChartBar, FaFilter } from "react-icons/fa";
+import { FaUserPlus, FaEnvelope, FaUsers, FaUserTimes, FaUserClock, FaChartBar, FaFilter, FaDumbbell } from "react-icons/fa";
+import PersonalTrainingWidget from "../assets/components/widgets/PersonalTrainingWidget";
 import { FiUsers, FiUserCheck, FiUserX, FiAlertTriangle, FiMessageCircle, FiPlus } from 'react-icons/fi';
 import "./Members.css";
 import COLORS from "../data/colors";
@@ -182,6 +183,7 @@ const Members = () => {
     const diff = (exp - today) / (1000 * 60 * 60 * 24);
     return diff >= 0 && diff <= 7;
   }).length;
+  const ptMembers = members.filter(m => (m.personal_training || 'No') === 'Yes').length;
 
   return (
     <div className="members-page">
@@ -243,6 +245,21 @@ const Members = () => {
             <p>Expired Members</p>
           </div>
         </div>
+        <div className="members-stat-card pt">
+          <div className="members-stat-icon">
+            <FaDumbbell />
+          </div>
+          <div className="members-stat-content">
+            <h3>{ptMembers}</h3>
+            <p>Personal Training</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Personal Training Widget */}
+      <div className="members-pt-section">
+        <h3>Personal Training Members</h3>
+        <PersonalTrainingWidget members={members} />
       </div>
 
       {/* Package Distribution Section */}

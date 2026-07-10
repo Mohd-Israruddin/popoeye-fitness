@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { FiSettings, FiSave, FiShield, FiUser, FiMail, FiPhone, FiClock, FiBell, FiTrash2, FiInstagram, FiDatabase, FiRefreshCw, FiInfo, FiAlertTriangle, FiBox, FiDollarSign, FiGrid, FiUsers, FiFileText } from 'react-icons/fi';
+import { FiSettings, FiSave, FiShield, FiUser, FiClock, FiBell, FiTrash2, FiDatabase, FiRefreshCw, FiInfo, FiAlertTriangle, FiBox, FiDollarSign, FiGrid, FiUsers, FiFileText } from 'react-icons/fi';
 import TermsAgreementModal from '../assets/components/TermsAgreementModal';
 import './Settings.css';
 
@@ -494,46 +494,6 @@ const Settings = () => {
           </div>
         </div>
 
-        {/* Contact Information Card */}
-        <div className="settings-card">
-          <h3><FiMail /> Contact Information</h3>
-          <div className="contact-info-section">
-            <a 
-              href="https://www.instagram.com/solsparrow.co?igsh=OTR4cjNld3Zvdms4" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="contact-item"
-            >
-              <FiInstagram className="contact-icon" />
-              <div className="contact-details">
-                <h4>Instagram</h4>
-              </div>
-            </a>
-            <a 
-              href="mailto:Solsparrowhq@gmail.com" 
-              className="contact-item"
-            >
-              <FiMail className="contact-icon" />
-              <div className="contact-details">
-                <h4>Email</h4>
-              </div>
-            </a>
-            <div className="contact-item">
-              <FiPhone className="contact-icon" />
-              <div className="contact-details">
-                <h4>Phone 1 (Hyderabad)</h4>
-                <span className="contact-text">+91 90591 71196</span>
-              </div>
-            </div>
-            <div className="contact-item">
-              <FiPhone className="contact-icon" />
-              <div className="contact-details">
-                <h4>Phone 2 (Pune)</h4>
-                <span className="contact-text">+91 63595 52530</span>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* Reset Admin Modal */}

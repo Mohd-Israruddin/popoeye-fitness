@@ -2,9 +2,9 @@ import React, { useState, useEffect } from "react";
 import { NavLink } from "react-router-dom";
 import "./Sidebar.css";
 import {
-  FaTachometerAlt, FaUsers, FaCalendarAlt, FaBoxOpen, FaDollarSign, 
+  FaTachometerAlt, FaUsers, FaCalendarAlt, FaDollarSign, 
   FaCog, FaChartLine, FaUserTie, FaQuestionCircle, FaBars, FaTimes, 
-  FaChevronDown, FaChevronRight, FaInstagram, FaEnvelope, FaDumbbell, FaFingerprint
+  FaChevronDown, FaChevronRight, FaFingerprint
 } from "react-icons/fa";
 import { useAuth } from '../../data/AuthContext';
 
@@ -12,12 +12,10 @@ const Sidebar = () => {
   const { isAdmin, isStaff } = useAuth();
   const [isOpen, setIsOpen] = useState(window.innerWidth > 768);
   const [financesOpen, setFinancesOpen] = useState(false);
-  const [contactOpen, setContactOpen] = useState(false);
   const [staffOpen, setStaffOpen] = useState(false);
 
   const handleToggle = () => setIsOpen(!isOpen);
   const toggleFinances = () => setFinancesOpen(!financesOpen);
-  const toggleContact = () => setContactOpen(!contactOpen);
   const toggleStaff = () => setStaffOpen(!staffOpen);
 
   useEffect(() => {
@@ -35,7 +33,6 @@ const Sidebar = () => {
   const navLinks = [
     { to: "/", icon: <FaTachometerAlt />, text: "Dashboard" },
     { to: "/members", icon: <FaUsers />, text: "Members" },
-    { to: "/inventory", icon: <FaBoxOpen />, text: "Inventory" },
     { to: "/schedule", icon: <FaCalendarAlt />, text: "Schedule" },
     { to: "/enquiries", icon: <FaQuestionCircle />, text: "Enquiries" },
   ];
@@ -62,10 +59,12 @@ const Sidebar = () => {
       <div className={`sidebar ${isOpen ? 'open' : 'closed'}`}>
         <div className="sidebar-header">
           <div className="logo-container">
-            <div className="logo-icon">
-              <FaDumbbell />
-            </div>
-            <h1 className="logo">GymSoft</h1>
+            <img
+              src="/popoeye-logo.jpeg"
+              alt="Popoeye Fitness"
+              className="logo-image"
+            />
+            <h1 className="logo">Popoeye Fitness</h1>
           </div>
           <button className="close-btn" onClick={handleToggle}>
             <FaTimes />
@@ -200,53 +199,17 @@ const Sidebar = () => {
             <div className="nav-indicator"></div>
           </NavLink>
 
-          {/* Contact Us Dropdown */}
-          <div className="nav-dropdown">
-            <button className="nav-dropdown-btn" onClick={toggleContact}>
-              <div className="nav-icon">
-                <FaEnvelope />
-              </div>
-              <span className="nav-text" style={{paddingLeft:"12px"}}>Contact Us</span>
-              <div className={`dropdown-arrow ${contactOpen ? 'open' : ''}`}>
-                <FaChevronRight />
-              </div>
-            </button>
-            <div className={`nav-dropdown-content contact-dropdown ${contactOpen ? 'open' : ''}`}> 
-              <div className="contact-links-container">
-                <a 
-                  href="https://www.instagram.com/solsparrow.co?igsh=OTR4cjNld3Zvdms4" 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
-                  className="contact-link" 
-                  title="Instagram"
-                >
-                  <FaInstagram />
-                  <span>Instagram</span>
-                </a>
-                <a 
-                  href="mailto:Solsparrowhq@gmail.com" 
-                  className="contact-link" 
-                  title="Email"
-                >
-                  <FaEnvelope />
-                  <span>Email</span>
-                </a>
-              </div>
+          <NavLink 
+            to="/settings" 
+            onClick={closeSidebarOnMobile}
+            className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}
+          >
+            <div className="nav-icon">
+              <FaCog />
             </div>
-            <div>
-              <NavLink 
-                to="/settings" 
-                className={({ isActive }) => isActive ? 'settings-link active' : 'settings-link'} 
-                onClick={closeSidebarOnMobile}
-              >
-                <div className="nav-icon">
-                  <FaCog />
-                </div>
-                <span className="nav-text">Settings</span>
-                <div className="nav-indicator"></div>
-              </NavLink>
-            </div>
-          </div>
+            <span className="nav-text">Settings</span>
+            <div className="nav-indicator"></div>
+          </NavLink>
         </nav>
 
         <div className="sidebar-footer">

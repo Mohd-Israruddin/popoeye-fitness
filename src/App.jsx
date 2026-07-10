@@ -10,7 +10,6 @@ import Members from "./pages/Members";
 import Schedule from "./pages/Schedule";
 import Settings from "./pages/Settings";
 import Staff from "./pages/Staff/Staff";
-import Inventory from "./pages/Inventory";
 import Enquiries from "./pages/Enquiries";
 import Finances from "./pages/Finances";
 import AddFinance from "./pages/Finances/AddFinance";
@@ -42,7 +41,6 @@ function AppContent() {
           <Route path="/schedule" element={<ProtectedRoute><Sidebar /><Schedule /></ProtectedRoute>} />
           <Route path="/staff" element={<ProtectedRoute><Sidebar /><Staff /></ProtectedRoute>} />
           <Route path="/staff/log" element={<ProtectedRoute adminOnly={true}><Sidebar /><StaffLog /></ProtectedRoute>} />
-          <Route path="/inventory" element={<ProtectedRoute><Sidebar /><Inventory /></ProtectedRoute>} />
           <Route path="/enquiries" element={<ProtectedRoute><Sidebar /><Enquiries /></ProtectedRoute>} />
           <Route path="/finances" element={<ProtectedRoute adminOnly={true}><Sidebar /><Finances /></ProtectedRoute>} />
           <Route path="/finances/add" element={<ProtectedRoute><Sidebar /><AddFinance /></ProtectedRoute>} />

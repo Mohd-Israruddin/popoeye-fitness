@@ -18,7 +18,7 @@ function getApiBaseUrl() {
     }
     
     // For production, use the Render backend URL
-    return 'https://solsparrow-backend.onrender.com';
+    return 'https://popoeye-fitness.onrender.com';
   }
   
   // Fallback for SSR or other environments

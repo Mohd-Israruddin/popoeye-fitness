@@ -58,13 +58,26 @@ cron.schedule("0 10 * * *", async () => {
     const formattedDate = targetDate.toISOString().split("T")[0];
 
     try {
-      const [results] = await db.execute("SELECT name, phone, expiry_date FROM members WHERE expiry_date = ? AND phone IS NOT NULL AND phone != ''", [formattedDate]);
+      const [results] = await db.execute(
+        `SELECT name, phone, expiry_date, package FROM members
+         WHERE expiry_date = ? AND phone IS NOT NULL AND phone != ''
+         AND LOWER(TRIM(package)) NOT IN ('1 day', '1 week')`,
+        [formattedDate]
+      );
       
       if (results.length === 0) continue;
 
       for (const member of results) {
         try {
-          const whatsappResult = await sendExpiryReminderMessage({ name: member.name, phone: member.phone, expiry_date: member.expiry_date }, daysLeft);
+          const whatsappResult = await sendExpiryReminderMessage(
+            {
+              name: member.name,
+              phone: member.phone,
+              expiry_date: member.expiry_date,
+              package: member.package,
+            },
+            daysLeft
+          );
           if (whatsappResult.success) {
             console.log(`📱 Reminder WhatsApp sent to ${member.name} (${daysLeft} days left)`);
           } else {
