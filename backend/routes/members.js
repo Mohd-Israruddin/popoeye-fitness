@@ -184,10 +184,10 @@ router.post("/", async (req, res) => {
       );
     }
 
-    // ✅ Send Welcome WhatsApp (if phone is provided)
+    let whatsappStatus = null;
     if (phone) {
       try {
-        await sendWelcomeMessage({
+        const waResult = await sendWelcomeMessage({
           id: result.insertId,
           name,
           phone,
@@ -198,15 +198,26 @@ router.post("/", async (req, res) => {
           total_amount,
           paid_amount,
         });
-        console.log("✅ Welcome WhatsApp sent to", phone);
+        if (waResult.success) {
+          whatsappStatus = 'sent';
+          console.log("✅ Welcome WhatsApp sent to", phone);
+        } else {
+          whatsappStatus = waResult.error || 'failed';
+          console.error("❌ WhatsApp failed:", whatsappStatus);
+        }
       } catch (whatsappErr) {
+        whatsappStatus = whatsappErr.message;
         console.error("❌ WhatsApp failed:", whatsappErr.message);
       }
     }
 
     await logActivity(created_by, 'add', 'member', result.insertId, `Added member: ${name}`);
 
-    res.json({ message: "✅ Member added successfully", id: result.insertId });
+    res.json({
+      message: "✅ Member added successfully",
+      id: result.insertId,
+      whatsapp: whatsappStatus,
+    });
   } catch (err) {
     console.error("❌ Error inserting member:", err);
     res.status(500).json({ error: err.message });

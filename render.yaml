@@ -21,6 +21,8 @@ services:
         value: your-app-password
       - key: GYM_NAME
         value: Your Gym Name
+      - key: SERVER_URL
+        value: https://popoeye-fitness.onrender.com
       - key: CONTACT_PHONE
         value: +1234567890
       - key: JWT_SECRET

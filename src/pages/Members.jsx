@@ -127,12 +127,22 @@ const Members = () => {
         setAddOrEditMode(null);
         fetchMembers();
       } else if (addOrEditMode === 'add') {
-        await api.post("/members", { ...pendingAddData, created_by: code });
+        const res = await api.post("/members", { ...pendingAddData, created_by: code });
         setShowForm(false);
         setEditing(null);
         setPendingAddData(null);
         setAddOrEditMode(null);
         fetchMembers();
+
+        let message = res.data?.message || '✅ Member added successfully!';
+        if (pendingAddData.phone) {
+          if (res.data?.whatsapp === 'sent') {
+            message += ' Welcome WhatsApp sent.';
+          } else if (res.data?.whatsapp) {
+            message += ` WhatsApp failed: ${res.data.whatsapp}`;
+          }
+        }
+        alert(message);
       }
     } catch (error) {
       console.error("Error saving:", error);

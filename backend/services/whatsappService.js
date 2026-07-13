@@ -102,6 +102,7 @@ const sendWelcomeMessage = async (memberData) => {
   if (memberData.id != null && memberData.id !== 0) {
     options.mediaUrl = getInvoiceUrl(memberData.id);
     options.documentFilename = `invoice-${memberData.member_id || memberData.id}.pdf`;
+    console.log('📎 Invoice media_url:', options.mediaUrl);
   }
 
   const result = await sendWhatsAppTemplate(

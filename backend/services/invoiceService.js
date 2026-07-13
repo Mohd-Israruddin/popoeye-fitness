@@ -8,11 +8,22 @@ const PAGE_MARGIN = 50;
 const ACCENT_COLOR = '#2563EB';
 
 function getServerUrl() {
-  return (
+  const url =
     process.env.SERVER_URL ||
+    process.env.RENDER_EXTERNAL_URL ||
     process.env.PUBLIC_API_URL ||
-    `http://localhost:${process.env.PORT || 5000}`
-  ).replace(/\/$/, '');
+    (process.env.NODE_ENV !== 'production'
+      ? `http://localhost:${process.env.PORT || 5000}`
+      : '');
+
+  if (!url) {
+    console.error(
+      '❌ SERVER_URL is not set. Add SERVER_URL=https://popoeye-fitness.onrender.com on Render.'
+    );
+    return 'https://popoeye-fitness.onrender.com';
+  }
+
+  return url.replace(/\/$/, '');
 }
 
 function getInvoiceUrl(memberId) {
