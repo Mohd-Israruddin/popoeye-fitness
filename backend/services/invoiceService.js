@@ -97,6 +97,7 @@ function drawInvoiceContent(doc, member) {
   const details = [
     ['Member ID', member.member_id || '—'],
     ['Name', member.name || '—'],
+    ['Package', member.package || '—'],
     ['Joining Date', formatDate(member.join_date)],
     ['Expiry Date', formatDate(member.expiry_date)],
     ['Total Cost', formatCurrency(member.total_amount)],
@@ -108,22 +109,37 @@ function drawInvoiceContent(doc, member) {
 
   doc.font('Helvetica-Bold').fontSize(11).fillColor(ACCENT_COLOR);
   doc.text('Member Details', PAGE_MARGIN, y);
-  y = doc.y + 10;
+  y = Math.round(doc.y + 12);
 
-  const labelX = tableLeft + 10;
-  const valueX = tableLeft + 130;
+  const labelX = Math.round(tableLeft + 10);
+  const valueX = Math.round(tableLeft + 140);
+  const rowHeight = 26;
 
   details.forEach(([label, value], index) => {
     const isDue = label === 'Payment Due' && pending > 0;
-    const bg = index % 2 === 0 ? '#f5f5f5' : '#ffffff';
-    doc.rect(tableLeft, y - 2, contentWidth, 24).fill(bg);
-    doc.font('Helvetica-Bold').fontSize(10).fillColor('#333333');
-    doc.text(`${label}:`, labelX, y + 5, { width: 115, lineBreak: false });
+    const rowY = Math.round(y);
+
+    // Light separator only — avoids gray fills that look blurry in WhatsApp/PDF viewers
+    if (index > 0) {
+      doc
+        .moveTo(tableLeft, rowY - 2)
+        .lineTo(tableRight, rowY - 2)
+        .strokeColor('#e5e7eb')
+        .lineWidth(0.75)
+        .stroke();
+    }
+
+    doc.font('Helvetica-Bold').fontSize(11).fillColor('#111111');
+    doc.text(`${label}:`, labelX, rowY + 5, { width: 120, lineBreak: false });
     doc
-      .font(isDue ? 'Helvetica-Bold' : 'Helvetica')
-      .fillColor(isDue ? '#c0392b' : '#333333')
-      .text(String(value), valueX, y + 5, { width: contentWidth - 140, lineBreak: false });
-    y += 26;
+      .font('Helvetica-Bold')
+      .fontSize(11)
+      .fillColor(isDue ? '#b91c1c' : '#000000')
+      .text(String(value), valueX, rowY + 5, {
+        width: Math.round(contentWidth - 150),
+        lineBreak: false,
+      });
+    y = rowY + rowHeight;
   });
 
   // GSTIN — bottom of page
