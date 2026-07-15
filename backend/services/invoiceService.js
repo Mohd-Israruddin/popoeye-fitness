@@ -97,6 +97,8 @@ function drawInvoiceContent(doc, member) {
   const details = [
     ['Member ID', member.member_id || '—'],
     ['Name', member.name || '—'],
+    ['Joining Date', formatDate(member.join_date)],
+    ['Expiry Date', formatDate(member.expiry_date)],
     ['Total Cost', formatCurrency(member.total_amount)],
     ['Payment Due', formatCurrency(pending)],
     ['Paid', formatCurrency(member.paid_amount)],
